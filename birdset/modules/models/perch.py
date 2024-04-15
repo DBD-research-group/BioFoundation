@@ -7,8 +7,8 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import torch
 from torch import nn
+from ...utils.label_utils import get_label_to_class_mapping_from_metadata
 
-from utils import get_label_to_class_mapping_from_metadata
 
 class PerchModel(nn.Module):
     """
@@ -239,3 +239,5 @@ class PerchModel(nn.Module):
         framed_audio = np.divide(framed_audio, peak_norm, where=(peak_norm > 0.0))
         framed_audio = framed_audio * target_peak
         return framed_audio
+
+    

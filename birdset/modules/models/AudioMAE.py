@@ -5,14 +5,9 @@ import warnings
 
 import numpy as np
 import pandas as pd
-
 from torch import nn
 
-from utils import get_label_to_class_mapping_from_metadata
-model=torch.load("AudioMAE.pth")
-for k, v in model.named_parameters():
-    print(k, v)
-    
+
 class AudioMAE(nn.Module):
     """
     
@@ -94,7 +89,6 @@ class AudioMAE(nn.Module):
     
 
 
-
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
@@ -118,7 +112,7 @@ class AudioMAE(nn.Module):
         input_values = input_values.cpu().numpy()
 
         # Get embeddings from the Perch model and move to the same device as input_values
-        embeddings, logits = self.get_embeddings(input_tensor=input_values)
+        embeddings, logits = self.get_embeddings()
 
         if self.train_classifier:
             embeddings = embeddings.to(device)
@@ -129,4 +123,31 @@ class AudioMAE(nn.Module):
 
         return output
 
-    
+    def get_embeddings(
+        self
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Get the embeddings and logits from the AudioMAE model.
+
+        Args:
+            input_tensor (tf.Tensor): The input tensor for the model.
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: A tuple of two tensors (embeddings, logits).
+        """
+
+        # Normalize the input tensor
+        input_tensor = self.normalize_audio(input_tensor)
+
+        input_tensor = input_tensor.reshape([-1, input_tensor.shape[-1]])
+
+        # Run the model and get the outputs using the optimized TensorFlow function
+
+        # Extract embeddings and logits, convert them to PyTorch tensors
+        embeddings = torch.nn.Embedding
+        logits = torch.logit
+
+        if self.restrict_logits:
+            logits = logits[:, self.target_indices]
+
+        return embeddings, logits
