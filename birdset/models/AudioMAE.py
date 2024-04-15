@@ -5,12 +5,14 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-import tensorflow_hub as hub
+
 from torch import nn
 
 from utils import get_label_to_class_mapping_from_metadata
-
+model=torch.load("AudioMAE.pth")
+for k, v in model.named_parameters():
+    print(k, v)
+    
 class AudioMAE(nn.Module):
     """
     
@@ -29,8 +31,7 @@ class AudioMAE(nn.Module):
     """
 
     # Constants for the model URL and embedding size
-    PERCH_TF_HUB_URL = "https://tfhub.dev/google/bird-vocalization-classifier"
-    EMBEDDING_SIZE = 1280
+
 
     def __init__(
         self,
@@ -88,55 +89,10 @@ class AudioMAE(nn.Module):
         """
         Load the model from a .pth checkpoint file.
         """
-        model_url = f"{self.PERCH_TF_HUB_URL}/{self.tfhub_version}"
-        #self.model = hub.load(model_url)
-        # with tf.device('/CPU:0'):
-        #     model = hub.load(model_url)
+
         self.load_state_dict(torch.load("AudioMAE.pth")) #loads weights on GPU by default
     
-    @tf.function  # Decorate with tf.function to compile into a callable TensorFlow graph
-    def run_tf_model(self, input_tensor: tf.Tensor) -> dict:
-        """
-        Run the TensorFlow model and get outputs.
 
-        Args:
-            input_tensor (tf.Tensor): The input tensor for the model.
-
-        Returns:
-            dict: A dictionary of model outputs.
-        """
-
-        return self.model.signatures["serving_default"](inputs=input_tensor)
-
-    def get_embeddings(
-        self, input_tensor: tf.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Get the embeddings and logits from the Perch model.
-
-        Args:
-            input_tensor (tf.Tensor): The input tensor for the model.
-
-        Returns:
-            Tuple[torch.Tensor, torch.Tensor]: A tuple of two tensors (embeddings, logits).
-        """
-
-        # Normalize the input tensor
-        input_tensor = self.normalize_audio(input_tensor)
-
-        input_tensor = input_tensor.reshape([-1, input_tensor.shape[-1]])
-
-        # Run the model and get the outputs using the optimized TensorFlow function
-        outputs = self.run_tf_model(input_tensor=input_tensor)
-
-        # Extract embeddings and logits, convert them to PyTorch tensors
-        embeddings = torch.from_numpy(outputs["output_1"].numpy())
-        logits = torch.from_numpy(outputs["output_0"].numpy())
-
-        if self.restrict_logits:
-            logits = logits[:, self.target_indices]
-
-        return embeddings, logits
 
 
     def forward(
