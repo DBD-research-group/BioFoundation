@@ -1,9 +1,9 @@
 model: 
-  _target_: birdset.modules.models.AudioMAE.PerchModel
+  _target_: birdset.modules.models.AudioMAE.AudioMAE
   num_classes: ${datamodule.dataset.n_classes}
   tfhub_version: 4
   train_classifier: True
-  label_path: ${paths.root_dir}/dataset/perch/label.csv
+  label_path: ${paths.root_dir}/dataset/AudioMAE/label.csv
   restrict_logits: False  
   dataset_info_path: null
   task: ${module.task}
