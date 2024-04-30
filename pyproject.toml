@@ -1,20 +1,24 @@
 [tool.poetry]
 name = "birdset"
-version = "0.1.0"
+version = "0.1.1"
 description = "BirdSet: A multi-task benchmark and data pipeline for deep learning based avian bioacoustics"
 authors = ["Lukas Rauch <lukas.rauch@uni-kassel.de>", "Raphael Schwinger <rsc@informatik.uni-kiel.de>", "Moritz Wirth <moritz.wirt@uni-kassel.de>", "Rene  Heinrich <rene.heinrich@iee.fraunhofer.de>", "Jonas Lange <jla@informatik.uni-kiel.de>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.10,<3.12"
 scipy = "^1.11.3"
 ffprobe = "^0.5"
 # --------- pytorch --------- #
-torch = "^2.1"
-torchvision = "^0.17"
-
-lightning= "^2.0"
+torch = "2.0.1"
+torchvision = "^0.15.2"
+lightning = "^2.2.2"
 torchmetrics= "^0.11"
+
+# --------- tensorflow --------- #
+tensorflow = {version = "2.14", extras = ["and-cuda"]}
+tensorflow-hub = "^0.16.1"
+tensorboard = "^2.14.1"
 
 # --------- hydra --------- #
 hydra-core = "^1.3"
@@ -41,7 +45,6 @@ pytest = "^7.4.2"
 sh = "^2.0.6"
 matplotlib = "^3.8.0"
 seaborn = "^0.13.0"
-tensorboard = "^2.14.1"
 ipywidgets = "^8.1.1"
 jupyter = "^1.0.0"
 datasets = "^2.14.6"
@@ -59,6 +62,9 @@ tensorflow-hub = "^0.16.1"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.25.2"
+plumbum = "^1.8.2"
+jsonlines = "^4.0.0"
+kaggle = "^1.6.11"
 
 
 [[tool.poetry.source]]
