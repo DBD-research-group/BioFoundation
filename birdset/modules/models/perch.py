@@ -6,9 +6,12 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import torch
 from torch import nn
+from ...utils.label_utils import get_label_to_class_mapping_from_metadata
 
+from utils import get_label_to_class_mapping_from_metadata
+from .embedding_abstract import EmbeddingModel
 
-class PerchModel(nn.Module):
+class PerchModel(nn.Module, EmbeddingModel):
     """
     A PyTorch model for bird vocalization classification, integrating a TensorFlow Hub model.
 
@@ -38,6 +41,7 @@ class PerchModel(nn.Module):
         label_path: Optional[str] = None,
         pretrain_info: Optional[Dict] = None,
         task: Optional[str] = None,
+        gpu_to_use: int = 0,
     ) -> None:
         """
         Initializes the PerchModel with configuration for loading the TensorFlow Hub model,
@@ -50,6 +54,8 @@ class PerchModel(nn.Module):
             train_classifier: If True, a classifier is added on top of the model embeddings.
             restrict_logits: If True, output logits are restricted to target classes based on dataset info.
             task: The classification task type ('multiclass' or 'multilabel'), used with `dataset_info_path`.
+            pretrain_info: A dictionary containing information about the pretraining of the model.
+            gpu_to_use: The GPU index to use for the model.
         """
         super().__init__()
         self.model = None  # Placeholder for the loaded model
@@ -61,6 +67,7 @@ class PerchModel(nn.Module):
         self.restrict_logits = restrict_logits
         self.label_path = label_path
         self.task = task
+        self.gpu_to_use = gpu_to_use
 
         if pretrain_info:
             self.hf_path = pretrain_info["hf_path"]
@@ -88,32 +95,26 @@ class PerchModel(nn.Module):
         """
         Load the model from TensorFlow Hub.
         """
+
         model_url = f"{self.PERCH_TF_HUB_URL}/{self.tfhub_version}"
         # self.model = hub.load(model_url)
         # with tf.device('/CPU:0'):
         #     model = hub.load(model_url)
+        physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_visible_devices(physical_devices[self.gpu_to_use], 'GPU')
+        tf.config.experimental.set_memory_growth(physical_devices[self.gpu_to_use], True)
 
-        physical_devices = tf.config.list_physical_devices("GPU")
-        tf.config.experimental.set_memory_growth(physical_devices[0], True)
         tf.config.optimizer.set_jit(True)
         self.model = hub.load(model_url)
 
         if self.restrict_logits:
             # Load the class list from the CSV file
-            pretrain_classlabels = pd.read_csv(self.label_path)
-            # Extract the 'ebird2021' column as a list
-            pretrain_classlabels = pretrain_classlabels["ebird2021"].tolist()
-
-            # Load dataset information
-            dataset_info = datasets.load_dataset_builder(
-                self.hf_path, self.hf_name
-            ).info
-            dataset_classlabels = dataset_info.features["ebird_code"].names
-
-            # Create the class mask
-            self.class_mask = [
-                pretrain_classlabels.index(i) for i in dataset_classlabels
-            ]
+            class_mapping_df = pd.read_csv(self.label_path)
+            # Extract the 'ebird2021' column as a numpy array
+            class_mapping = class_mapping_df["ebird2021"].values
+            # Convert the class mapping to a dictionary {index: "label"}
+            self.class_mapping = dict(enumerate(class_mapping))
+            self.target_indices = self.restrict_logits_to_target_classes()
 
     @tf.function  # Decorate with tf.function to compile into a callable TensorFlow graph
     def run_tf_model(self, input_tensor: tf.Tensor) -> dict:

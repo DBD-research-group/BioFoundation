@@ -6,6 +6,9 @@ import json
 from birdset import utils
 import pyrootutils 
 
+import torch
+print(torch.cuda.is_available())
+
 log = utils.get_pylogger(__name__)
 
 root = pyrootutils.setup_root(
@@ -57,7 +60,7 @@ def train(cfg):
     # Training
     log.info(f"Instantiate trainer <{cfg.trainer._target_}>")
     trainer = hydra.utils.instantiate(
-        cfg.trainer, callbacks= callbacks, logger=logger
+        cfg.trainer, callbacks=callbacks, logger=logger
     )
 
     # Setup model 
