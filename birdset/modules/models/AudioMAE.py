@@ -12,7 +12,7 @@ class AudioMAE(nn.Module):
     """
     
     Attributes:
-        PERCH_TF_HUB_URL (str): URL to the TensorFlow Hub model for bird vocalization.
+        AudioMAE_TF_HUB_URL (str): URL to the TensorFlow Hub model for bird vocalization.
         EMBEDDING_SIZE (int): The size of the embeddings produced by the TensorFlow Hub model.
         num_classes (int): The number of classes to classify into.
         tfhub_version (str): The version of the TensorFlow Hub model to use.
@@ -39,13 +39,13 @@ class AudioMAE(nn.Module):
         task: Optional[str] = None,
     ) -> None:
         """
-        Initializes the PerchModel with configuration for loading the TensorFlow Hub model,
+        Initializes the AudioMAE Model with configuration for loading the TensorFlow Hub model,
         an optional classifier, and setup for target class restriction based on dataset info.
 
         Args:
             num_classes: The number of output classes for the classifier.
             tfhub_version: The version identifier of the TensorFlow Hub model to load.
-            label_path: Path to a CSV file containing the class information for the Perch model.
+            label_path: Path to a CSV file containing the class information for the AudioMAE model.
             train_classifier: If True, a classifier is added on top of the model embeddings.
             restrict_logits: If True, output logits are restricted to target classes based on dataset info.
             dataset_info_path: Optional path to a JSON file containing target class information.
@@ -111,7 +111,7 @@ class AudioMAE(nn.Module):
         # Move the tensor to the CPU and convert it to a NumPy array.
         input_values = input_values.cpu().numpy()
 
-        # Get embeddings from the Perch model and move to the same device as input_values
+        # Get embeddings from the AudioMAE model and move to the same device as input_values
         embeddings, logits = self.get_embeddings()
 
         if self.train_classifier:
