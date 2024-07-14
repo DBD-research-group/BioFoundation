@@ -1,6 +1,9 @@
 from birdset.datamodule.components.transforms import BirdSetTransformsWrapper
 from .base_datamodule import BaseDataModuleHF, DatasetConfig, LoadersConfig
-from datasets import load_dataset, IterableDataset, IterableDatasetDict, DatasetDict, Audio, Dataset
+from datasets import load_dataset, IterableDataset, IterableDatasetDict, DatasetDict, Audio, Dataset, concatenate_datasets
+from collections import defaultdict
+from tabulate import tabulate
+from tqdm import tqdm
 import logging
 from birdset.utils import pylogger
 log = pylogger.get_pylogger(__name__)
@@ -13,17 +16,77 @@ class BEANSDataModule(BaseDataModuleHF):
             dataset: DatasetConfig = DatasetConfig(),
             loaders: LoadersConfig = LoadersConfig(),
             transforms: BirdSetTransformsWrapper = BirdSetTransformsWrapper(),
+            mapper: None = None,
+            k_samples: int = 0
     ):
         super().__init__(
             dataset=dataset,
             loaders=loaders,
             transforms=transforms
         )
+        self.k_samples = k_samples
+        self.id_to_label = defaultdict(str)
 
     def _preprocess_data(self, dataset):
         """
-        Preprocess the data. If multilabel is the task we will one hot encode.
+        Preprocess the data. If multilabel is the task we will one hot encode. Use k_samples > 0 if you want control over amount of samples per class. The rest is used for validation and testing.
         """
+
+        if self.k_samples > 0:
+            print(f">> Selecting {self.k_samples} Samples per Class this may take a bit...")
+            merged_data = concatenate_datasets([dataset['train'], dataset['valid'], dataset['test']])
+
+            # Shuffle the merged data
+            merged_data.shuffle() # Check if this is affected by the public seed
+            
+            # Create a dictionary to store the selected samples per class
+            selected_samples = defaultdict(list)
+            train_count = defaultdict(int)
+            testval_count = defaultdict(int)
+            rest_samples = []
+            # Iterate over the merged data and select the desired number of samples per class
+            for sample in tqdm(merged_data, total=len(merged_data), desc="Selecting samples"):
+                label = sample['labels']
+                if len(selected_samples[label]) < self.k_samples:
+                    selected_samples[label].append(sample)
+                    train_count[label] += 1
+                else:
+                    rest_samples.append(sample)
+                    testval_count[label] += 1    
+
+            
+            # Create and print table to show class distribution
+            headers = ["Class", "#Train-Samples", "#Test,Valid-Samples"]
+            rows = []
+            
+            for class_id in selected_samples.keys():
+                rows.append([self.id_to_label[class_id], train_count[class_id], testval_count[class_id]])
+            
+            print(tabulate(rows, headers, tablefmt="rounded_grid"))
+            
+            # Flatten the selected samples into a single list
+            selected_samples = [sample for samples in selected_samples.values() for sample in samples]
+
+            # Split the selected samples into training, validation, and testing sets
+            test_ratio = 0.5
+
+            num_samples = len(rest_samples)
+            num_test_samples = int(test_ratio * num_samples)
+
+            train_data = selected_samples
+            test_data = rest_samples[:num_test_samples]
+            val_data = rest_samples[num_test_samples:]
+            
+            train_data = Dataset.from_dict({key: [sample[key] for sample in train_data] for key in train_data[0]})
+            test_data = Dataset.from_dict({key: [sample[key] for sample in test_data] for key in test_data[0]})
+            val_data = Dataset.from_dict({key: [sample[key] for sample in val_data] for key in val_data[0]})
+
+            # Combine into a DatasetDict
+            dataset = DatasetDict({
+                'train': train_data,
+                'valid': val_data,
+                'test': test_data
+            })
 
         if self.dataset_config.task == 'multilabel':
             log.info(">> One-hot-encode classes")
@@ -77,6 +140,7 @@ class BEANSDataModule(BaseDataModuleHF):
                 labels.update(dataset[split]["labels"])
 
             label_to_id = {lbl: i for i, lbl in enumerate(labels)}
+            self.id_to_label = {value: key for key, value in label_to_id.items()} # Save id_to_label to get names later on 
 
             def label_to_id_fn(batch):
                 for i in range(len(batch['labels'])):
