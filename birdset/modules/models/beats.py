@@ -36,13 +36,14 @@ class BEATsModel(nn.Module):
         #     in_features=self.EMBEDDING_SIZE, out_features=num_classes
         # )
         self.classifier = nn.Sequential(
+            nn.ReLU(),
             nn.Linear(self.EMBEDDING_SIZE, 128),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(128, 64),
             nn.ReLU(),
             nn.Linear(64, self.num_classes),
-        )
+            )
 
 
     def load_model(self) -> None:
@@ -77,9 +78,12 @@ class BEATsModel(nn.Module):
             #print("embeddings",embeddings.size())
             if self.train_classifier:
                 # Pass embeddings through the classifier to get the final output
-                output = self.classifier(embeddings)
+                epsilon = 1e-7  # A small value to prevent extreme logits
+                output_ = torch.clamp(embeddings, min=1e-7, max=10)
+                output = self.classifier(output_)
+
             else:
-                output = embeddings
+                output = torch.clamp(embeddings, min=1e-7, max=10)
 
             return output
 

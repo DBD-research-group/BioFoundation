@@ -77,7 +77,7 @@ class BEATs(nn.Module):
         logger.info(f"BEATs Config: {cfg.__dict__}")
 
         self.cfg = cfg
-        self.device = device    
+        #self.device = device    
         self.embed = cfg.embed_dim
         self.post_extract_proj = (
             nn.Linear(self.embed, cfg.encoder_embed_dim)
@@ -127,11 +127,11 @@ class BEATs(nn.Module):
         device = source.device
         for waveform in source:
             waveform = waveform * 2 ** 15
-            waveform.to(device)
+            #waveform.to(device)
             fbank = ta_kaldi.fbank(waveform, num_mel_bins=128, sample_frequency=16000, frame_length=25, frame_shift=10)
             fbanks.append(fbank)
         fbank = torch.stack(fbanks, dim=0)
-        fbank = fbank.to(device)
+        #fbank = fbank.to(device)
         fbank = (fbank - fbank_mean) / (2 * fbank_std)
         return fbank
 
@@ -144,7 +144,7 @@ class BEATs(nn.Module):
     ):
         fbank = self.preprocess(source, fbank_mean=fbank_mean, fbank_std=fbank_std)
         device = source.device
-        fbank.to(device)
+        #fbank.to(device)
         if padding_mask is not None:
             padding_mask = self.forward_padding_mask(fbank, padding_mask)
 

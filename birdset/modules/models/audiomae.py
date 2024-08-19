@@ -138,4 +138,3 @@ class AudioMAEModel(nn.Module):
         melspecs = self.preprocessor.process_batch(input_tensor)
         embeddings = self.model(melspecs)
         return embeddings
-
