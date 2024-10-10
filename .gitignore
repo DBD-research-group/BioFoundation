@@ -13,7 +13,7 @@ output_birdset/
 *.hydra
 *.ogg
 
-data/*
+#data/*
 
 logs/*
 
