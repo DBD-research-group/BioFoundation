@@ -15,6 +15,7 @@ output_birdset/
 
 data/*
 
+
 logs/*
 
 output/*
@@ -178,7 +179,7 @@ dmypy.json
 
 # Lightning-Hydra-Template
 configs/local/default.yaml
-data/
+#data/
 logs/
 .env
 
