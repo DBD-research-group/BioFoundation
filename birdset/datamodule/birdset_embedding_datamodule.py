@@ -56,6 +56,10 @@ class BirdSetEmbeddingDataModule(EmbeddingDataModule, BirdSetDataModule):
             gpu_to_use=gpu_to_use
         )
     
+    @property
+    def num_classes(self):
+        return super(BirdSetDataModule, self).num_classes
+    
     def prepare_data(self):
         """
         Same as prepare_data in BaseDataModuleHF but checks if path exists and skips rest otherwise
