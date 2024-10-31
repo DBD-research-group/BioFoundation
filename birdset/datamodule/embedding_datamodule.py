@@ -76,8 +76,8 @@ class EmbeddingDataModule(BaseDataModuleHF):
         self.embedding_model_name = embedding_model.model_name
         self.embedding_model = embedding_model.model.to(self.device) # Move Model to GPU
         self.embedding_model.eval()  # Set the model to evaluation mode
-        self.sample_rate = embedding_model.sample_rate
-        self.input_length_in_s = embedding_model.input_length_in_s
+        self.sample_rate = embedding_model.sampling_rate 
+        self.input_length_in_s = embedding_model.length
         self.embeddings_save_path = os.path.join(
             self.dataset_config.data_dir,
             f"{self.dataset_config.dataset_name}_processed_embedding_model_{self.embedding_model_name}_{self.average}_{self.sample_rate}_{self.input_length_in_s}",
