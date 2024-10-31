@@ -1,0 +1,82 @@
+# @package _global_
+# This file uses values from LT_example_train.yaml and from the XCL folder in neurips24
+defaults:
+  - override /logger: wandb_embedding.yaml
+  - override /datamodule: pretrain_embedding.yaml
+  - override /module: embedding.yaml
+  - override /callbacks: default.yaml
+  - override /trainer: single_gpu.yaml
+  - override /paths: default.yaml
+  - override /hydra: default.yaml
+  - override /datamodule/transforms: embedding_transform.yaml # The old transforms need to be made
+  - override /datamodule/transforms/waveform_augmentations: none.yaml
+  - override /datamodule/transforms/spectrogram_augmentations: none.yaml
+
+tags: ["XCL", "beats", "multilabel"]
+seed: 1
+train: True
+test: False
+
+logger: null
+
+trainer:
+  limit_val_batches: ${datamodule.val_batches} 
+  devices: [3]
+  min_epochs: 1
+  max_epochs: 30
+  accelerator: "auto"
+
+module:
+# Multilabel stuff:
+  task: multilabel
+
+  metrics:
+    _target_: birdset.configs.module_configs.MultilabelMetricsConfig
+    num_labels: ${datamodule.dataset.n_classes}
+
+  loss:
+    _target_: torch.nn.BCEWithLogitsLoss
+
+  output_activation: 
+    _target_: "torch.sigmoid"
+    _partial_: true
+# Optimizer:
+  optimizer:
+    _target_: torch.optim.AdamW
+    lr: 5e-4 #1e-2
+    weight_decay: 5e-4
+  network:
+    torch_compile: False
+
+datamodule:
+  val_batches: 0
+  embedding_model:  # This is needed to provide num_classes to the classifier model (Isn't used but set to 0 by default and injected to late in train.py)
+    model:
+      num_classes: null
+
+  k_samples: 32
+
+  dataset:
+    dataset_name: XCL # Important to get XCL dataset
+    hf_path: DBD-research-group/BirdSet # Important to get XCL dataset
+    hf_name: XCL # Important to get XCL dataset
+    val_split: null
+    class_weights_loss: null
+    class_weights_sampler: null
+    classlimit: 100
+    subset: 2000
+    eventlimit: 2
+    direct_fingerprint: null
+
+  loaders:
+    train:
+      batch_size: 64
+      num_workers: 32
+    valid:
+      batch_size: 64
+      num_workers: 32
+
+callbacks:
+  model_checkpoint:
+    save_top_k: 1
+    every_n_epochs: 1
