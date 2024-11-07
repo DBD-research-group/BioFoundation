@@ -75,14 +75,14 @@ class EmbeddingDataModule(BaseDataModuleHF):
         self.embedding_model = embedding_model.model.to(self.device) # Move Model to GPU
         self.embedding_model.eval()  # Set the model to evaluation mode
         self.sampling_rate = embedding_model.sampling_rate
-        self.max_length = embedding_model.length
+        self.input_length_in_s = embedding_model.length
         #self.pre_transforms = pre_transforms
         self.decoder = decoder
         self.embeddings_save_path = os.path.join(
             self.dataset_config.data_dir,
-            f"{self.dataset_config.dataset_name}_processed_embedding_model_{self.embedding_model_name}_{self.average}_{self.sample_rate}_{self.input_length_in_s}",
+            f"{self.dataset_config.dataset_name}_processed_embedding_model_{self.embedding_model_name}_{self.average}_{self.sampling_rate}_{self.input_length_in_s}",
         )
-        log.info(f"Using embedding model:{embedding_model.model_name} (Sampling Rate:{self.sample_rate}, Window Size:{self.input_length_in_s})")
+        log.info(f"Using embedding model:{embedding_model.model_name} (Sampling Rate:{self.sampling_rate}, Window Size:{self.input_length_in_s})")
 
     def prepare_data(self):
         """
@@ -116,7 +116,8 @@ class EmbeddingDataModule(BaseDataModuleHF):
         """
 
         # Check if actually a dict
-        dataset = self._ksamples(dataset)
+        if self.k_samples > 0:
+            dataset = self._ksamples(dataset, k=self.k_samples, use_val=self.val_batches, use_test=self.test_ratio)
         # Probably wrong here
         '''if self.dataset_config.task == 'multilabel':
             log.info(">> One-hot-encode classes")
@@ -136,95 +137,151 @@ class EmbeddingDataModule(BaseDataModuleHF):
         """
         return concatenate_datasets([dataset['train'], dataset['valid'], dataset['test']])
 
-    def _ksamples(self, dataset):
+    def _ksamples(self, dataset, k, use_train=True, use_val=False, use_test=False):
         """
+        Extract only k samples per class for training.
+        dataset: DatasetDict containing the train, valid, and test splits.
+        k: Number of samples per class to extract.
+        use_train: If True, the training set will be used to extract samples.
+        use_val: If True, the validation set will also be used to extract samples.
+        use_test: If True, the test set will also be used to extract samples.
+
+        Returns a DatasetDict with the selected samples per class in the training set, the validation and test sets are left unchanged if use_val and use_test are False. If use_val or use_test are True, the selected samples will be removed from the validation and test sets.
+
         Use k_samples > 0 if you want control over amount of samples per class. The rest is used for validation and testing.
         If test_ratio == 1 then no validation set even if k_samples == 0!
         """
-        if self.k_samples > 0:
-            log.info(f">> Selecting {self.k_samples} Samples per Class this may take a bit...")
-            for split in dataset.keys():
-                log.info(f"First sample from {split} split: {dataset[split][35]}"
-                         )
-            merged_data = self._concatenate_dataset(dataset)
+        log.info(f">> Selecting {self.k_samples} Samples per Class this may take a bit...")
 
-            # Shuffle the merged data
-            merged_data.shuffle() #TODO: Check if this is affected by the public seed
-            
-            # Create a dictionary to store the selected samples per class
-            selected_samples = defaultdict(list)
-            train_count = defaultdict(int)
-            testval_count = defaultdict(int)
-            rest_samples = []
-            # Iterate over the merged data and select the desired number of samples per class
-            for sample in tqdm(merged_data, total=len(merged_data), desc="Selecting samples"):
-                label = sample['labels']
-                if isinstance(label, list): # For multilabel
-                    label = label.index(1)
-                if len(selected_samples[label]) < self.k_samples:
-                    selected_samples[label].append(sample)
-                    train_count[label] += 1
-                else:
-                    rest_samples.append(sample)
-                    testval_count[label] += 1    
+        if not use_train:
+            log.info("Selecting no samples from train set")
+            dataset['train'] = Dataset.from_dict({key: [] for key in dataset['train'][0]})
+        
+        # TODO: implement selecting from valid and test, for now just use train
 
-            
-            # Create and print table to show class distribution
-            headers = ["Class", "#Train-Samples", "#Test,Valid-Samples"]
-            rows = []
-            
-            for class_id in selected_samples.keys():
-                rows.append([self.id_to_label[class_id], train_count[class_id], testval_count[class_id]])
-            
-            print(tabulate(rows, headers, tablefmt="rounded_grid"))
-            
-            # Flatten the selected samples into a single list
-            selected_samples = [sample for samples in selected_samples.values() for sample in samples]
+        log.info(f"Selecting {self.k_samples} samples per class from train set")
 
-            # Split the selected samples into training, validation, and testing sets
+        # shuffle the dataset to ensure a random selection of samples
+        dataset['train'].shuffle()
 
-            if self.val_batches == 0:
-                train_data = Dataset.from_dict({key: [sample[key] for sample in selected_samples] for key in selected_samples[0]})
-                test_data = Dataset.from_dict({key: [sample[key] for sample in rest_samples] for key in rest_samples[0]})
-                dataset = DatasetDict({
-                    'train': train_data,
-                    'test': test_data
-                })
+          # Create a dictionary to store the selected samples per class
+        selected_samples = defaultdict(list)
+        train_count = defaultdict(int)
+        testval_count = defaultdict(int)
+        rest_samples = [] 
 
-            
-            else:    
-                num_samples = len(rest_samples)
-                num_test_samples = int(self.test_ratio * num_samples)
+        # Iterate over the merged data and select the desired number of samples per class
+        for sample in tqdm(dataset['train'], total=len(dataset['train']), desc="Selecting samples"):
+            label = sample['labels']
+            if isinstance(label, list): # For multilabel
+                label = label.index(1)
+            if len(selected_samples[label]) < self.k_samples:
+                selected_samples[label].append(sample)
+                train_count[label] += 1
+            else:
+                rest_samples.append(sample)
+                testval_count[label] += 1
 
-                train_data = selected_samples
-                test_data = rest_samples[:num_test_samples]
-                val_data = rest_samples[num_test_samples:]
-                val_data = Dataset.from_dict({key: [sample[key] for sample in val_data] for key in val_data[0]}) #! Use first test sample as val cant be empty
+        # Create and print table to show class distribution
+        headers = ["Class", "#Train-Samples", "#Not used sampels"]
+        rows = []
+        
+        for class_id in selected_samples.keys():
+            rows.append([self.id_to_label[class_id], train_count[class_id], testval_count[class_id]])
+        
+        print(tabulate(rows, headers, tablefmt="rounded_grid"))
 
-                train_data = Dataset.from_dict({key: [sample[key] for sample in train_data] for key in train_data[0]})
-                test_data = Dataset.from_dict({key: [sample[key] for sample in test_data] for key in test_data[0]})
+        # Flatten the selected samples into a single list
+        selected_samples = [sample for samples in selected_samples.values() for sample in samples]
+        # overwrite the train set with the selected samples
+        dataset['train'] = Dataset.from_dict({key: [sample[key] for sample in selected_samples] for key in selected_samples[0]})
 
-                # Combine into a DatasetDict
-                dataset = DatasetDict({
-                    'train': train_data,
-                    'valid': val_data,
-                    'test': test_data
-                })
-        else:
-            if self.val_batches == 0:
-                if 'valid' in dataset:
-                    dataset['test'] = concatenate_datasets([dataset['valid'], dataset['test']])
-                    # remove the valid key
-                    del dataset['valid']
-                
-            if self.low_train:
-                del dataset['train']
-                dataset['train'] = dataset['train_low']
-                del dataset['train_low']    
-                
-            
-            
         return dataset
+
+
+   
+        #     for split in dataset.keys():
+        #         log.info(f"First sample from {split} split: {dataset[split][35]}"
+        #                  )
+        #     merged_data = self._concatenate_dataset(dataset)
+
+        #     # Shuffle the merged data
+        #     merged_data.shuffle() #TODO: Check if this is affected by the public seed
+            
+        #     # Create a dictionary to store the selected samples per class
+        #     selected_samples = defaultdict(list)
+        #     train_count = defaultdict(int)
+        #     testval_count = defaultdict(int)
+        #     rest_samples = []
+        #     # Iterate over the merged data and select the desired number of samples per class
+        #     for sample in tqdm(merged_data, total=len(merged_data), desc="Selecting samples"):
+        #         label = sample['labels']
+        #         if isinstance(label, list): # For multilabel
+        #             label = label.index(1)
+        #         if len(selected_samples[label]) < self.k_samples:
+        #             selected_samples[label].append(sample)
+        #             train_count[label] += 1
+        #         else:
+        #             rest_samples.append(sample)
+        #             testval_count[label] += 1    
+
+            
+        #     # Create and print table to show class distribution
+        #     headers = ["Class", "#Train-Samples", "#Test,Valid-Samples"]
+        #     rows = []
+            
+        #     for class_id in selected_samples.keys():
+        #         rows.append([self.id_to_label[class_id], train_count[class_id], testval_count[class_id]])
+            
+        #     print(tabulate(rows, headers, tablefmt="rounded_grid"))
+            
+        #     # Flatten the selected samples into a single list
+        #     selected_samples = [sample for samples in selected_samples.values() for sample in samples]
+
+        #     # Split the selected samples into training, validation, and testing sets
+
+        #     if self.val_batches == 0:
+        #         train_data = Dataset.from_dict({key: [sample[key] for sample in selected_samples] for key in selected_samples[0]})
+        #         test_data = Dataset.from_dict({key: [sample[key] for sample in rest_samples] for key in rest_samples[0]})
+        #         dataset = DatasetDict({
+        #             'train': train_data,
+        #             'test': test_data
+        #         })
+
+            
+        #     else:    
+        #         num_samples = len(rest_samples)
+        #         num_test_samples = int(self.test_ratio * num_samples)
+
+        #         train_data = selected_samples
+        #         test_data = rest_samples[:num_test_samples]
+        #         val_data = rest_samples[num_test_samples:]
+        #         val_data = Dataset.from_dict({key: [sample[key] for sample in val_data] for key in val_data[0]}) #! Use first test sample as val cant be empty
+
+        #         train_data = Dataset.from_dict({key: [sample[key] for sample in train_data] for key in train_data[0]})
+        #         test_data = Dataset.from_dict({key: [sample[key] for sample in test_data] for key in test_data[0]})
+
+        #         # Combine into a DatasetDict
+        #         dataset = DatasetDict({
+        #             'train': train_data,
+        #             'valid': val_data,
+        #             'test': test_data
+        #         })
+        # else:
+        #     if self.val_batches == 0:
+        #         if 'valid' in dataset:
+        #             dataset['test'] = concatenate_datasets([dataset['valid'], dataset['test']])
+        #             # remove the valid key
+        #             del dataset['valid']
+                
+        #     if self.low_train:
+        #         del dataset['train']
+        #         dataset['train'] = dataset['train_low']
+        #         del dataset['train_low']    
+                
+            
+            
+        # return dataset
     
     def setup(self, stage=None):
         if not self.train_dataset and not self.val_dataset:
@@ -278,7 +335,7 @@ class EmbeddingDataModule(BaseDataModuleHF):
             
             log.info(f">> Extracting Embeddings for {split} Split")
             # Apply the embedding function to each sample in the split
-            dataset[split] = dataset[split].map(compute_and_update_embedding, desc="Extracting Embeddings", load_from_cache_file=False, new_fingerprint=get_new_fingerprint(split), num_proc=self.dataset_config.n_workers)
+            dataset[split] = dataset[split].map(compute_and_update_embedding, desc="Extracting Embeddings", load_from_cache_file=False, num_proc=self.dataset_config.n_workers)
         
         log.info(f"Saving emebeddings to disk: {self.embeddings_save_path}")
         dataset.save_to_disk(self.embeddings_save_path)
@@ -296,23 +353,23 @@ class EmbeddingDataModule(BaseDataModuleHF):
         audio = self._zero_pad(waveform)
 
         # Check if audio is too long 
-        if waveform.shape[0] > self.input_length_in_s * self.sample_rate:
+        if waveform.shape[0] > self.input_length_in_s * self.sampling_rate:
             if self.average:
                 return self._frame_and_average(waveform) 
             else:
-                audio = audio[:self.input_length_in_s * self.sample_rate]
+                audio = audio[:self.input_length_in_s * self.sampling_rate]
                 return self.embedding_model.get_embeddings(audio.view(1, 1, -1))[0] 
         else:
             return self.embedding_model.get_embeddings(audio.view(1, 1, -1))[0]
 
     # Resample function
     def _resample_audio(self, audio, orig_sr):
-        resampler = torchaudio.transforms.Resample(orig_freq=orig_sr, new_freq=self.sample_rate)
+        resampler = torchaudio.transforms.Resample(orig_freq=orig_sr, new_freq=self.sampling_rate)
         return resampler(audio)
 
     # Zero-padding function
     def _zero_pad(self, audio):
-        desired_num_samples = self.input_length_in_s * self.sample_rate 
+        desired_num_samples = self.input_length_in_s * self.sampling_rate 
         current_num_samples = audio.shape[0]
         padding = desired_num_samples - current_num_samples
         if padding > 0:
@@ -325,8 +382,8 @@ class EmbeddingDataModule(BaseDataModuleHF):
     # Average multiple embeddings function
     def _frame_and_average(self, audio):
         # Frame the audio
-        frame_size = self.input_length_in_s * self.sample_rate
-        hop_size = self.input_length_in_s * self.sample_rate
+        frame_size = self.input_length_in_s * self.sampling_rate
+        hop_size = self.input_length_in_s * self.sampling_rate
         frames = audio.unfold(0, frame_size, hop_size)
         
         # Generate embeddings for each frame
