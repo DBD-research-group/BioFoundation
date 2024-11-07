@@ -1,4 +1,5 @@
-from birdset.datamodule.components.transforms import EmbeddingTransforms
+from birdset.datamodule.components.transforms import EmbeddingTransforms, BirdSetTransformsWrapper
+from birdset.datamodule.components.event_decoding import EventDecoding
 from birdset.datamodule.base_datamodule import BaseDataModuleHF
 from birdset.configs import NetworkConfig, DatasetConfig, LoadersConfig
 from datasets import DatasetDict, Dataset, concatenate_datasets, load_from_disk
@@ -13,7 +14,7 @@ from typing import Union
 import torch
 import torchaudio
 import os
-
+from copy import deepcopy
 
 log = pylogger.get_pylogger(__name__)
 
@@ -38,11 +39,8 @@ class EmbeddingDataModule(BaseDataModuleHF):
             val_batches: int = None, # Should val set be created
             test_ratio: float = 0.5, # Ratio of test set if val set is also created
             low_train: bool = False, # If low train set is used
-            embedding_model: EmbeddingModuleConfig = EmbeddingModuleConfig(
-                model_name="ConvNeXT-Base-BirdSet-XCL",
-                sample_rate=32000,
-                input_length_in_s=5,
-            ),
+            embedding_model: EmbeddingModuleConfig = EmbeddingModuleConfig(),
+            decoder: EventDecoding | None = None,
             average: bool = True,
             gpu_to_use: int = 0
     ):
@@ -76,8 +74,10 @@ class EmbeddingDataModule(BaseDataModuleHF):
         self.embedding_model_name = embedding_model.model_name
         self.embedding_model = embedding_model.model.to(self.device) # Move Model to GPU
         self.embedding_model.eval()  # Set the model to evaluation mode
-        self.sample_rate = embedding_model.sampling_rate 
-        self.input_length_in_s = embedding_model.length
+        self.sampling_rate = embedding_model.sampling_rate
+        self.max_length = embedding_model.length
+        #self.pre_transforms = pre_transforms
+        self.decoder = decoder
         self.embeddings_save_path = os.path.join(
             self.dataset_config.data_dir,
             f"{self.dataset_config.dataset_name}_processed_embedding_model_{self.embedding_model_name}_{self.average}_{self.sample_rate}_{self.input_length_in_s}",
@@ -117,8 +117,8 @@ class EmbeddingDataModule(BaseDataModuleHF):
 
         # Check if actually a dict
         dataset = self._ksamples(dataset)
-
-        if self.dataset_config.task == 'multilabel':
+        # Probably wrong here
+        '''if self.dataset_config.task == 'multilabel':
             log.info(">> One-hot-encode classes")
             dataset = dataset.map(
                 self._classes_one_hot,
@@ -126,10 +126,15 @@ class EmbeddingDataModule(BaseDataModuleHF):
                 batch_size=500,
                 load_from_cache_file=True,
                 num_proc=self.dataset_config.n_workers,
-            )
+            )'''
 
         return dataset
 
+    def _concatenate_dataset(self, dataset):
+        """
+        Concatenate the dataset to a single dataset
+        """
+        return concatenate_datasets([dataset['train'], dataset['valid'], dataset['test']])
 
     def _ksamples(self, dataset):
         """
@@ -138,7 +143,10 @@ class EmbeddingDataModule(BaseDataModuleHF):
         """
         if self.k_samples > 0:
             log.info(f">> Selecting {self.k_samples} Samples per Class this may take a bit...")
-            merged_data = concatenate_datasets([dataset['train'], dataset['valid'], dataset['test']])
+            for split in dataset.keys():
+                log.info(f"First sample from {split} split: {dataset[split][35]}"
+                         )
+            merged_data = self._concatenate_dataset(dataset)
 
             # Shuffle the merged data
             merged_data.shuffle() #TODO: Check if this is affected by the public seed
@@ -151,6 +159,8 @@ class EmbeddingDataModule(BaseDataModuleHF):
             # Iterate over the merged data and select the desired number of samples per class
             for sample in tqdm(merged_data, total=len(merged_data), desc="Selecting samples"):
                 label = sample['labels']
+                if isinstance(label, list): # For multilabel
+                    label = label.index(1)
                 if len(selected_samples[label]) < self.k_samples:
                     selected_samples[label].append(sample)
                     train_count[label] += 1
@@ -202,9 +212,10 @@ class EmbeddingDataModule(BaseDataModuleHF):
                 })
         else:
             if self.val_batches == 0:
-                dataset['test'] = concatenate_datasets([dataset['valid'], dataset['test']])
-                # remove the valid key
-                del dataset['valid']
+                if 'valid' in dataset:
+                    dataset['test'] = concatenate_datasets([dataset['valid'], dataset['test']])
+                    # remove the valid key
+                    del dataset['valid']
                 
             if self.low_train:
                 del dataset['train']
@@ -239,6 +250,14 @@ class EmbeddingDataModule(BaseDataModuleHF):
         def compute_and_update_embedding(sample):
             with torch.no_grad():
                 # Get the embedding for the audio sample
+                if self.decoder:
+                    for key, value in sample.items():
+                        sample[key] = [value]
+                    
+                    sample = self.decoder(sample)
+
+                sample['audio'] = sample['audio'][0] #TODO Remove/change for BEANS compat
+                sample['audio']['sampling_rate'] = sample['audio']['samplerate'] #TODO Remove if naming fixed
                 embedding = self._get_embedding(sample['audio'])
                 # Update the sample with the new embedding
                 sample['embedding'] = {}
@@ -250,9 +269,16 @@ class EmbeddingDataModule(BaseDataModuleHF):
 
         # Apply the transformation to each split in the dataset
         for split in dataset.keys():
+            '''if self.pre_transforms:
+                transforms = deepcopy(self.pre_transforms)
+                transforms.set_mode(split)
+                if split == "train":  # we need this for sampler, cannot be done later because set_transform
+                    self.train_label_list = dataset["train"]["labels"]
+                dataset.set_transform(transforms, output_all_columns=False)    '''  
+            
             log.info(f">> Extracting Embeddings for {split} Split")
             # Apply the embedding function to each sample in the split
-            dataset[split] = dataset[split].map(compute_and_update_embedding, desc="Extracting Embeddings", load_from_cache_file=True)
+            dataset[split] = dataset[split].map(compute_and_update_embedding, desc="Extracting Embeddings", load_from_cache_file=False, new_fingerprint=get_new_fingerprint(split), num_proc=self.dataset_config.n_workers)
         
         log.info(f"Saving emebeddings to disk: {self.embeddings_save_path}")
         dataset.save_to_disk(self.embeddings_save_path)
