@@ -307,14 +307,16 @@ class EmbeddingDataModule(BaseDataModuleHF):
         def compute_and_update_embedding(sample):
             with torch.no_grad():
                 # Get the embedding for the audio sample
-                if self.decoder:
-                    for key, value in sample.items():
-                        sample[key] = [value]
+                if self.decoder: # This part is specific for BirdSet Data as it uses the decoder
+                    for key, value in sample.items(): # Convert to batch of 1
+                        if key == 'filepath' or 'start_time' or 'end_time':
+                            sample[key] = [value]
                     
                     sample = self.decoder(sample)
+                    sample['audio'] = sample['audio'][0]
+                    sample['labels'] = sample['labels'][0]
+                    sample['audio']['sampling_rate'] = sample['audio']['samplerate']
 
-                sample['audio'] = sample['audio'][0] #TODO Remove/change for BEANS compat
-                sample['audio']['sampling_rate'] = sample['audio']['samplerate'] #TODO Remove if naming fixed
                 embedding = self._get_embedding(sample['audio'])
                 # Update the sample with the new embedding
                 sample['embedding'] = {}
@@ -326,13 +328,6 @@ class EmbeddingDataModule(BaseDataModuleHF):
 
         # Apply the transformation to each split in the dataset
         for split in dataset.keys():
-            '''if self.pre_transforms:
-                transforms = deepcopy(self.pre_transforms)
-                transforms.set_mode(split)
-                if split == "train":  # we need this for sampler, cannot be done later because set_transform
-                    self.train_label_list = dataset["train"]["labels"]
-                dataset.set_transform(transforms, output_all_columns=False)    '''  
-            
             log.info(f">> Extracting Embeddings for {split} Split")
             # Apply the embedding function to each sample in the split
             dataset[split] = dataset[split].map(compute_and_update_embedding, desc="Extracting Embeddings", load_from_cache_file=False, num_proc=self.dataset_config.n_workers)
@@ -346,8 +341,7 @@ class EmbeddingDataModule(BaseDataModuleHF):
         # Get waveform and sampling rate
         waveform = torch.tensor(audio['array'], dtype=torch.float32).to(self.device) # Get waveform audio and move to GPU
         dataset_sampling_rate = audio['sampling_rate']
-        # Resample audio
-        audio = self._resample_audio(waveform, dataset_sampling_rate)
+        # Resample audio is done in load_data()
         
         # Zero-padding
         audio = self._zero_pad(waveform)
@@ -362,10 +356,6 @@ class EmbeddingDataModule(BaseDataModuleHF):
         else:
             return self.embedding_model.get_embeddings(audio.view(1, 1, -1))[0]
 
-    # Resample function
-    def _resample_audio(self, audio, orig_sr):
-        resampler = torchaudio.transforms.Resample(orig_freq=orig_sr, new_freq=self.sampling_rate)
-        return resampler(audio)
 
     # Zero-padding function
     def _zero_pad(self, audio):
@@ -373,10 +363,7 @@ class EmbeddingDataModule(BaseDataModuleHF):
         current_num_samples = audio.shape[0]
         padding = desired_num_samples - current_num_samples
         if padding > 0:
-            #print('padding')
-            pad_left = padding // 2
-            pad_right = padding - pad_left
-            audio = torch.nn.functional.pad(audio, (pad_left, pad_right))
+            audio = torch.nn.functional.pad(audio, (0, padding))
         return audio
 
     # Average multiple embeddings function

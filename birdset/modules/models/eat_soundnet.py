@@ -8,6 +8,7 @@ import lightning as L
 from dataclasses import dataclass, field
 import warnings 
 import datasets
+from typing import Tuple
 log = pylogger.get_pylogger(__name__)
 
 class ResBlock1dTF(nn.Module):
@@ -30,7 +31,7 @@ class ResBlock1dTF(nn.Module):
 
 
 class TAggregate(nn.Module):
-    def __init__(self, clip_length=None, embed_dim=64, n_layers=6, nhead=6, n_classes=None, dim_feedforward=512):
+    def __init__(self, clip_length=None, embed_dim=64, n_layers=6, nhead=6, num_classes=None, dim_feedforward=512):
         super(TAggregate, self).__init__()
         self.num_tokens = 2 # TODO: changed this from 1 to 2
         drop_rate = 0.1
@@ -38,7 +39,7 @@ class TAggregate(nn.Module):
         self.transformer_enc = nn.TransformerEncoder(enc_layer, num_layers=n_layers, norm=nn.LayerNorm(embed_dim))
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, clip_length + self.num_tokens, embed_dim))
-        self.fc = nn.Linear(embed_dim, n_classes)
+        self.fc = nn.Linear(embed_dim, num_classes)
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
@@ -106,7 +107,7 @@ class SoundNet(nn.Module):
     '''
     NeuralNetwork for sound classification
     expected input shape: (batch_size, clip_length)
-    output shape: (batch_size, n_classes)
+    output shape: (batch_size, num_classes)
 
     Parameters:
     nf (int): Number of filters in the convolutional layers. Default is 32.
@@ -115,7 +116,7 @@ class SoundNet(nn.Module):
     n_layers (int): Number of transformer layers. Default is 4.
     nhead (int): Number of heads in the multihead attention models. Default is 8.
     factors (List[int]): List of factors for the convolutional layers. Default is [4, 4, 4, 4].
-    n_classes (Optional[int]): Number of classes for classification. Default is None.
+    num_classes (Optional[int]): Number of classes for classification. Default is None.
     dim_feedforward (int): Dimension of the feedforward network model. Default is 512.
     '''
     def __init__(
@@ -126,7 +127,7 @@ class SoundNet(nn.Module):
             n_layers: int = 4,
             nhead: int = 8,
             factors: List[int] = [4, 4, 4, 4],
-            n_classes: int | None = None,
+            num_classes: int | None = None,
             dim_feedforward: int = 512 ,
             local_checkpoint: str | None = None,
             pretrain_info = None,
@@ -141,7 +142,7 @@ class SoundNet(nn.Module):
             self.num_classes = len(
                 datasets.load_dataset_builder(self.hf_path, self.hf_name).info.features["ebird_code"].names)
         else:
-            self.num_classes = n_classes
+            self.num_classes = num_classes
 
         ds_fac = np.prod(np.array(factors)) * 4
         clip_length = seq_len // ds_fac
@@ -171,7 +172,7 @@ class SoundNet(nn.Module):
         self.down2 = nn.Sequential(*model)
         self.project = nn.Conv1d(nf, embed_dim, 1)
         self.clip_length = clip_length
-        self.tf = TAggregate(embed_dim=embed_dim, clip_length=clip_length, n_layers=n_layers, nhead=nhead, n_classes=self.num_classes, dim_feedforward=dim_feedforward)
+        self.tf = TAggregate(embed_dim=embed_dim, clip_length=clip_length, n_layers=n_layers, nhead=nhead, num_classes=self.num_classes, dim_feedforward=dim_feedforward)
         self.apply(self._init_weights)
         if local_checkpoint:
             log.info(f">> Loading state dict from local checkpoint: {local_checkpoint}")
@@ -179,11 +180,13 @@ class SoundNet(nn.Module):
             self.down.load_state_dict(self.load_state_dict_from_file(local_checkpoint, model_name='down'))
             self.down2.load_state_dict(self.load_state_dict_from_file(local_checkpoint, model_name='down2'))
             self.project.load_state_dict(self.load_state_dict_from_file(local_checkpoint, model_name='project'))
-            self.tf.load_state_dict(self.load_state_dict_from_file(local_checkpoint, model_name='tf'))
+            self.tf.load_state_dict(self.load_state_dict_from_file(local_checkpoint, model_name='tf'), strict=False)
 
     def load_state_dict_from_file(self, file_path, model_name= 'model'):
         state_dict = torch.load(file_path, map_location=self.device)["state_dict"]
         # select only models where the key starts with `model.` + model_name + `.`
+        # TODO: Only do this if classifier varies 
+        state_dict = {k: v for k, v in state_dict.items() if not k.startswith('model.tf.fc')}
         state_dict = {key: weight for key, weight in state_dict.items() if key.startswith('model.' + model_name + '.')}
         state_dict = {key.replace('model.' + model_name + '.', ''): weight for key, weight in state_dict.items()}
 
@@ -212,3 +215,27 @@ class SoundNet(nn.Module):
         x = self.project(x)
         pred = self.tf(x)
         return pred
+    
+    def get_embeddings(self, input_tensor: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        if len(input_tensor.shape) < 3:
+            input_tensor = input_tensor.unsqueeze(1)
+
+        # Pass through the initial layers
+        x = self.start(input_tensor)
+        x = self.down(x)
+        x = self.down2(x)
+
+        # Get the projected embeddings
+        embeddings = self.project(x)
+        
+        # Create embeddings from transformer
+        cls_tokens = self.tf.cls_token.expand(embeddings.shape[0], -1, -1)
+        embeddings_with_pos = torch.cat((cls_tokens, embeddings.permute(0, 2, 1).contiguous()), dim=1)
+        embeddings_with_pos += self.tf.pos_embed
+        embeddings_with_pos.transpose_(1, 0)
+        transformer_output = self.tf.transformer_enc(embeddings_with_pos)
+        
+        # cls_embeddings are the transformer embeddings corresponding to the class token
+        cls_embeddings = transformer_output[0]
+        
+        return cls_embeddings, None
