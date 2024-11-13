@@ -25,13 +25,20 @@ logger:
     mode: online
 
 module:
+  network: 
+    model:
+      _target_: birdset.modules.models.two_layer_classifier.TwoLayerClassifier
+      in_features: ${datamodule.embedding_model.embedding_size}
+      hidden_dim: 256
+      dropout_rate: 0.8
+      num_classes: ${datamodule.dataset.n_classes}
   optimizer:
-    lr: 1e-2
+    lr: 5e-4
     weight_decay: 5e-4
     
 trainer:
-  limit_val_batches: ${datamodule.val_batches} 
   devices: [3]
+  limit_val_batches: ${datamodule.val_batches} 
   min_epochs: 1
   max_epochs: 100
 
@@ -46,9 +53,9 @@ datamodule:
 
   loaders:
     train:
-      batch_size: 32
+      batch_size: 8
       shuffle: True
-      num_workers: 16
+      num_workers: 4
       drop_last: True
     valid:
       batch_size: 32
@@ -66,8 +73,9 @@ callbacks:
     every_n_train_steps: null
   early_stopping:
     _target_: lightning.pytorch.callbacks.EarlyStopping
-    monitor: "train/BCEWithLogitsLoss"
-    patience: 2
-    min_delta: 1e-3
+    monitor: "val/cmAP"
+    patience: 4
+    mode: 'max'
+    min_delta: 5e-3
     verbose: False
     check_finite: True

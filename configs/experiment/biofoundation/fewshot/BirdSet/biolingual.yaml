@@ -2,6 +2,6 @@
 #package global is neccessary!
 defaults:
   - biofoundation/fewshot/BirdSet/BirdSet_config.yaml
-  - override /datamodule/embedding_model: ../../module/network/hubert.yaml  
+  - override /datamodule/embedding_model: ../../module/network/biolingual.yaml  
   
 
