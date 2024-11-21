@@ -1,20 +1,18 @@
 import os
-#import gradio as gr
+#import gradio as gr DONT WANT TO USE THE WEB INTERFACE
 import torch
-import torch.nn as nn
 import torchaudio
-'''from peft import (
+from peft import (
     LoraConfig,
     get_peft_model,
     get_peft_model_state_dict,
     prepare_model_for_int8_training,
     set_peft_model_state_dict,
-)'''
+)
 from transformers import GenerationConfig, LlamaForCausalLM, LlamaTokenizer, LlamaConfig
-#from utils.prompter import Prompter
+from utils.prompter import Prompter
 import datetime
 import time,json
-from birdset.configs import PretrainInfoConfig
 
 
 class LTU(nn.Module):
@@ -28,17 +26,15 @@ class LTU(nn.Module):
         print("Test")
 
 
-
-
-'''device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # no matter which check point you use, do not change this section, this loads the llm
 prompter = Prompter('alpaca_short')
-tokenizer = LlamaTokenizer.from_pretrained('../../pretrained_mdls/vicuna_ltu/')
+tokenizer = LlamaTokenizer.from_pretrained('../../../network/ltu/pretrained_mdls/vicuna_ltu/')
 if device == 'cuda':
-    model = LlamaForCausalLM.from_pretrained('../../pretrained_mdls/vicuna_ltu/', device_map="auto", torch_dtype=torch.float16)
+    model = LlamaForCausalLM.from_pretrained('../../../network/ltu/pretrained_mdls/vicuna_ltu/', device_map="auto", torch_dtype=torch.float16)
 else:
-    model = LlamaForCausalLM.from_pretrained('../../pretrained_mdls/vicuna_ltu/', device_map="auto")
+    model = LlamaForCausalLM.from_pretrained('../../../network/ltu/pretrained_mdls/vicuna_ltu/', device_map="auto")
 
 config = LoraConfig(
     r=8,
@@ -52,7 +48,7 @@ config = LoraConfig(
 model = get_peft_model(model, config)
 
 # change the path to your checkpoint
-state_dict = torch.load('/data/sls/scratch/yuangong/ltu/pretrained_mdls/ltu_ori_paper.bin', map_location='cpu')
+state_dict = torch.load('../../../network/ltu/pretrained_mdls/ltu_ori_paper.bin', map_location='cpu')
 msg = model.load_state_dict(state_dict, strict=False)
 
 model.is_parallelizable = True
@@ -73,7 +69,6 @@ log_save_path = log_save_path + cur_time + '.json'
 SAMPLE_RATE = 16000
 AUDIO_LEN = 1.0
 
-# Replace with own preprocessor 
 def load_audio(audio_path):
     waveform, sample_rate = torchaudio.load(audio_path)
     audio_info = 'Original input audio length {:.2f} seconds, number of channels: {:d}, sampling rate: {:d}.'.format(waveform.shape[1]/sample_rate, waveform.shape[0], sample_rate)
@@ -156,7 +151,7 @@ def predict(audio_path, question):
     print('eclipse time: ', end_time - begin_time, ' seconds.')
     return audio_info, output
 
-link = "https://github.com/YuanGongND/ltu"
+'''link = "https://github.com/YuanGongND/ltu"
 text = "[Github]"
 paper_link = "https://arxiv.org/pdf/2305.10790.pdf"
 paper_text = "[Paper]"
