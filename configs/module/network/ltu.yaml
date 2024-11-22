@@ -1,6 +1,7 @@
 model:
   _target_: birdset.modules.models.ltu.LTU
   checkpoint: null # ADD 
+  folder_path: ${paths.root_dir}/models/ltu
   local_checkpoint: null
   num_classes: null
   cache_dir: ${paths.model_path}
