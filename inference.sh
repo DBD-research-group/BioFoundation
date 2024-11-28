@@ -68,12 +68,12 @@ create_symlink() {
 }
 
 # Define the source and target files for the symbolic links
-SOURCE_FILE1="../../pretrained_mdls/vicuna/pytorch_model-00001-of-00002.bin"
-TARGET_FILE1_LTU="../../pretrained_mdls/vicuna_ltu/pytorch_model-00001-of-00002.bin"
-TARGET_FILE1_LTUAS="../../pretrained_mdls/vicuna_ltuas/pytorch_model-00001-of-00002.bin"
-SOURCE_FILE2="../../pretrained_mdls/vicuna/pytorch_model-00002-of-00002.bin"
-TARGET_FILE2_LTU="../../pretrained_mdls/vicuna_ltu/pytorch_model-00002-of-00002.bin"
-TARGET_FILE2_LTUAS="../../pretrained_mdls/vicuna_ltuas/pytorch_model-00002-of-00002.bin"
+SOURCE_FILE1="models/ltu/pretrained_mdls/vicuna/pytorch_model-00001-of-00002.bin"
+TARGET_FILE1_LTU="models/ltu/pretrained_mdls/vicuna_ltu/pytorch_model-00001-of-00002.bin"
+TARGET_FILE1_LTUAS="models/ltu/pretrained_mdls/vicuna_ltuas/pytorch_model-00001-of-00002.bin"
+SOURCE_FILE2="models/ltu/pretrained_mdls/vicuna/pytorch_model-00002-of-00002.bin"
+TARGET_FILE2_LTU="models/ltu/pretrained_mdls/vicuna_ltu/pytorch_model-00002-of-00002.bin"
+TARGET_FILE2_LTUAS="models/ltu/pretrained_mdls/vicuna_ltuas/pytorch_model-00002-of-00002.bin"
 
 # Create symbolic links for vicuna_ltu and vicuna_ltuas
 create_symlink "$SOURCE_FILE1" "$TARGET_FILE1_LTU"
@@ -83,7 +83,7 @@ create_symlink "$SOURCE_FILE2" "$TARGET_FILE2_LTUAS"
 
 DOWNLOAD_URL="https://www.dropbox.com/scl/fi/ryoqai0ayt45k07ib71yt/ltuas_long_noqa_a6.bin?rlkey=1ivttmj8uorf63dptbdd6qb2i&dl=1"
 
-TARGET_DIR="../../pretrained_mdls"
+TARGET_DIR="models/ltu/pretrained_mdls"
 TARGET_FILE="${TARGET_DIR}/ltuas_long_noqa_a6.bin"
 
 if [ -f "$TARGET_FILE" ]; then
@@ -97,7 +97,7 @@ fi
 
 DOWNLOAD_URL="https://www.dropbox.com/scl/fi/ir69ci3bhf4cthxnnnl76/ltu_ori_paper.bin?rlkey=zgqin9hh1nn2ua39jictcdhil&dl=1"
 
-TARGET_DIR="../../pretrained_mdls"
+TARGET_DIR="models/ltu/pretrained_mdls"
 TARGET_FILE="${TARGET_DIR}/ltu_ori_paper.bin"
 
 if [ -f "$TARGET_FILE" ]; then
@@ -109,14 +109,14 @@ else
     echo "Download complete. File saved to $TARGET_FILE"
 fi
 
-mkdir -p ../../eval_data/
+mkdir -p models/ltu/eval_data/
 FILE_URL="https://www.dropbox.com/scl/fo/juh1dk9ltvhghuj0l1sag/h?rlkey=0n2cd5kebzh8slwanjzrfn7q6&dl=1"
 wget -O download.zip "$FILE_URL"
-unzip -n download.zip -d ../../eval_data/  # -n option to not overwrite existing files
+unzip -n download.zip -d models/ltu/eval_data/  # -n option to not overwrite existing files
 rm download.zip
 FILE_URL="https://www.dropbox.com/scl/fo/o91k6cnwqft84tgmuotwg/h?rlkey=6bnjobvrbqbt4rqt3f1tgaeb8&dl=1"
 wget -O download.zip "$FILE_URL"
-unzip -n download.zip -d ../../eval_data/  # -n option to not overwrite existing files
+unzip -n download.zip -d models/ltu/eval_data/  # -n option to not overwrite existing files
 rm download.zip
 
 #python inference_gradio.py
