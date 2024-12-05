@@ -1,13 +1,14 @@
 # @package _global_
 #package global is neccessary!
 defaults:
-  - beans/linearprobing/linearprobing_config.yaml 
+  - biofoundation/birdset/finetuning/finetuning_config.yaml 
   - override /module/network: ast.yaml  
 
 datamodule:
   transforms:
     preprocessing:
       resizer:
+        target_width: 1_024 
         target_width: 1_024 
 
 module:
@@ -16,5 +17,5 @@ module:
       preprocess_in_model: False
       classifier:
         _target_: birdset.modules.models.linear_classifier.LinearClassifier
-        num_classes: ${module.network.model.num_classes}
-        in_features: ${module.network.embedding_size}
+        num_classes: ${datamodule.dataset.num_classes}
+        in_features: ${module.network.embedding_size}        
