@@ -54,18 +54,27 @@ class HubertSequenceClassifier(BirdSetModel):
         self.cache_dir = cache_dir
 
         state_dict = None
+        model_state_dict = None
         if local_checkpoint:
-            state_dict = torch.load(local_checkpoint)["state_dict"]
-            state_dict = {
-                key.replace("model.model.", ""): weight
-                for key, weight in state_dict.items()
+            state_dict = torch.load(local_checkpoint)['state_dict']
+            model_state_dict = {
+                key.replace("model.model.hubert.", ""): weight
+                for key, weight in state_dict.items() if key.startswith("model.model.")
             }
+
+            # Process the keys for the classifier
+            if self.classifier:
+                classifier_state_dict = {
+                    key.replace("model.classifier.", ""): weight
+                    for key, weight in state_dict.items() if key.startswith("model.classifier.")
+                }
+                self.classifier.load_state_dict(classifier_state_dict)
 
         self.model = AutoModelForAudioClassification.from_pretrained(
             self.checkpoint,
             num_labels=self.num_classes,
             cache_dir=self.cache_dir,
-            state_dict=state_dict,
+            state_dict=model_state_dict,
             ignore_mismatched_sizes=True,
         )
         
