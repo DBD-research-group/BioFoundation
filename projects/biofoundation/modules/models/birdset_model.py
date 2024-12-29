@@ -2,7 +2,8 @@ import datasets
 from torch import nn
 import torch
 from birdset.configs import PretrainInfoConfig
-
+from birdset.utils import pylogger
+log = pylogger.get_pylogger(__name__)
 
 class BirdSetModel(nn.Module):
     def __init__(
