@@ -246,13 +246,22 @@ class SoundNet(nn.Module):
     def load_state_dict_from_file(self, file_path, model_name="model"):
         state_dict = torch.load(file_path, map_location=self.device)["state_dict"]
         # select only models where the key starts with `model.` + model_name + `.`
+        prefix = ""
+        for name in state_dict.keys():
+            if name.startswith("model.model."):
+                prefix = "model."
+                break
+        # TODO: Only do this if classifier varies
+        state_dict = {
+            k: v for k, v in state_dict.items() if not k.startswith(prefix+"model.tf.fc")
+        }
         state_dict = {
             key: weight
             for key, weight in state_dict.items()
-            if key.startswith("model." + model_name + ".")
+            if key.startswith(prefix+"model." + model_name + ".")
         }
         state_dict = {
-            key.replace("model." + model_name + ".", ""): weight
+            key.replace(prefix+"model." + model_name + ".", ""): weight
             for key, weight in state_dict.items()
         }
 
@@ -280,3 +289,99 @@ class SoundNet(nn.Module):
         x = self.project(x)
         pred = self.tf(x)
         return pred
+
+    # def get_embeddings(
+    #     self, input_tensor: torch.Tensor
+    # ) -> Tuple[torch.Tensor, torch.Tensor]:
+    #     if len(input_tensor.shape) < 3:
+    #         input_tensor = input_tensor.unsqueeze(1)
+
+    #     # Pass through the initial layers
+    #     x = self.start(input_tensor)
+    #     x = self.down(x)
+    #     x = self.down2(x)
+
+    #     # Get the projected embeddings
+    #     embeddings = self.project(x)
+
+    #     # Create embeddings from transformer
+    #     cls_tokens = self.tf.cls_token.expand(embeddings.shape[0], -1, -1)
+    #     embeddings_with_pos = torch.cat(
+    #         (cls_tokens, embeddings.permute(0, 2, 1).contiguous()), dim=1
+    #     )
+    #     embeddings_with_pos += self.tf.pos_embed
+    #     embeddings_with_pos.transpose_(1, 0)
+    #     transformer_output = self.tf.transformer_enc(embeddings_with_pos)
+
+    #     # cls_embeddings are the transformer embeddings corresponding to the class token
+    #     cls_embeddings = transformer_output[0]
+
+    #     return cls_embeddings, None
+
+    def get_embeddings(self, x: torch.Tensor) -> torch.Tensor:
+        if len(x.shape) < 3:
+            x.unsqueeze_(1)
+        x = self.start(x)
+        x = self.down(x)
+        x = self.down2(x)
+        x = self.project(x)
+        _, embeddings = self.tf(x)
+        return embeddings
+
+
+class EAT(BirdSetModel):
+    EMBEDDING_SIZE = 128
+
+    def __init__(
+        self,
+        num_classes: int | None,
+        embedding_size: int = EMBEDDING_SIZE,
+        local_checkpoint: str = None,
+        freeze_backbone: bool = False,
+        preprocess_in_model: bool = True,
+        classifier: nn.Module | None = None,
+        pretrain_info: Optional[PretrainInfoConfig] = None,
+        device: str| int = "cuda:0",
+        nf: int = 32,
+        seq_len: int = 90112,
+        n_layers: int = 4,
+        nhead: int = 8,
+        factors: List[int] = [4, 4, 4, 4],
+        dim_feedforward: int = 512,
+    ):
+        super().__init__(
+            num_classes=num_classes,
+            embedding_size=embedding_size,
+            local_checkpoint=local_checkpoint,
+            freeze_backbone=freeze_backbone,
+            preprocess_in_model=preprocess_in_model,
+            pretrain_info=pretrain_info,
+            classifier=classifier,
+        )
+        self.model = SoundNet(
+            embedding_size=embedding_size,
+            num_classes=self.num_classes,
+            device=device,
+            classifier=classifier,
+            nf=nf,
+            seq_len=seq_len,
+            n_layers=n_layers,
+            nhead=nhead,
+            factors=factors,
+            dim_feedforward=dim_feedforward,
+            local_checkpoint=local_checkpoint,
+        )
+        if self.freeze_backbone:
+            self.classifier = copy.deepcopy(classifier)
+            for param in self.model.parameters():
+                param.requires_grad = False
+
+    def forward(self, input_values: torch.Tensor, **kwargs) -> torch.Tensor:
+        if self.freeze_backbone:
+            embedding = self.model.get_embeddings(input_values)
+            logits = self.classifier(embedding)
+            return logits
+        return self.model(input_values)
+    
+    def get_embeddings(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model.get_embeddings(x)
