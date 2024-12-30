@@ -52,14 +52,21 @@ class ConvNextClassifier(nn.Module):
 
         self.num_channels = num_channels
         self.checkpoint = checkpoint
-        self.local_checkpoint = local_checkpoint
         self.cache_dir = cache_dir
 
         self.model = None
 
         self._initialize_model()
+        
+        if local_checkpoint:
+            self._load_local_checkpoint()
 
-    def _initialize_model(self):
+        if freeze_backbone:
+            for param in self.model.parameters():
+                param.requires_grad = False
+        
+
+    def _initialize_model(self) -> ConvNextForImageClassification | ConvNextModel:
         """Initializes the ConvNext model based on specified attributes."""
 
         adjusted_state_dict = None
