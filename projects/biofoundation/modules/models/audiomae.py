@@ -48,13 +48,9 @@ class AudioMAEModel(BirdSetModel):
             )
         else:
             self.classifier = classifier
+        
         if local_checkpoint:
-            state_dict = torch.load(local_checkpoint)["state_dict"]
-            state_dict = {
-                key.replace("model.model.", ""): weight
-                for key, weight in state_dict.items()
-            }
-            self.model.load_state_dict(state_dict)
+            self._load_local_checkpoint()
 
         if freeze_backbone:
             for param in self.model.parameters():
