@@ -18,6 +18,7 @@ class ConvNextClassifier(nn.Module):
         num_classes: Optional[int] = None,
         checkpoint: Optional[str] = None,
         local_checkpoint: Optional[str] = None,
+        load_classifier_checkpoint: bool = True,
         cache_dir: Optional[str] = None,
         pretrain_info: PretrainInfoConfig = None,
     ):
@@ -31,7 +32,15 @@ class ConvNextClassifier(nn.Module):
             cache_dir: specified cache dir to save model files at
             pretrain_info: hf_path and hf_name of info will be used to infer if num_classes is None
         """
-        super().__init__()
+        super().__init__(
+            num_classes=num_classes,
+            embedding_size=embedding_size,
+            freeze_backbone=freeze_backbone,
+            local_checkpoint=local_checkpoint,
+            load_classifier_checkpoint=load_classifier_checkpoint,
+            preprocess_in_model=preprocess_in_model,
+        )
+        self.classifier = classifier
 
         if pretrain_info:
             self.hf_path = pretrain_info.hf_path

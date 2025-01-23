@@ -42,6 +42,7 @@ class EATSSL(BirdSetModel):
         num_classes: int | None,
         embedding_size: int = EMBEDDING_SIZE,
         local_checkpoint: str = None,
+        load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
         classifier: nn.Module | None = None,
@@ -50,6 +51,7 @@ class EATSSL(BirdSetModel):
             num_classes=num_classes,
             embedding_size=embedding_size,
             local_checkpoint=local_checkpoint,
+            load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
         )
