@@ -172,6 +172,11 @@ Results on HSN:
 | Wav2Vec2| ? | ? | ? |
 | BirdNET| ? | ? | ? |
 
+investigation on Audiomae
+| audiomae| 0.38 |0.79|(https://wandb.ai/deepbirddetect/BioFoundation/runs/audiomae_finetuning_BirdSet_HSN_1_2025-01-28_135649)|20epoch
+Lukas setup:
+| audiomae| 0.16 |0.18|( https://wandb.ai/deepbirddetect/BioFoundation/runs/audiomae_finetuning_BirdSet_HSN_1_2025-01-29_082945)
+
 ### Running Linear Probing Experiments on BirdSet
 
 ```bash
