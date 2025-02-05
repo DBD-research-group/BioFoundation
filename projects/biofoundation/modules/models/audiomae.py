@@ -23,6 +23,7 @@ class AudioMAEModel(BirdSetModel):
 
     def __init__(
         self,
+        checkpoint,
         num_classes: int,
         embedding_size: int = EMBEDDING_SIZE,
         local_checkpoint: str = None,
@@ -39,6 +40,7 @@ class AudioMAEModel(BirdSetModel):
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
         )
+        self.checkpoint = checkpoint
         self.model = None  # Placeholder for the loaded model
         self.load_model()
         self.num_classes = num_classes
@@ -50,10 +52,17 @@ class AudioMAEModel(BirdSetModel):
             )
         else:
             self.classifier = classifier
-        
-        if local_checkpoint:
-            self._load_local_checkpoint()
 
+        if local_checkpoint:
+            if "state_dict" in self.checkpoint:
+                state_dict = torch.load(local_checkpoint)["state_dict"]
+            else:
+                state_dict = self.checkpoint["model"]
+            state_dict = {
+                key.replace("model.model.", ""): weight
+                for key, weight in state_dict.items()
+            }
+            self.model.load_state_dict(state_dict)
         if freeze_backbone:
             for param in self.model.parameters():
                 param.requires_grad = False
@@ -65,8 +74,13 @@ class AudioMAEModel(BirdSetModel):
         self.model = timm.create_model(
             "hf_hub:gaunernst/vit_base_patch16_1024_128.audiomae_as2m", pretrained=True
         )
+        # If the checkpoint contains a state dict inside a key (e.g., "state_dict"), extract it
+        checkpoint = torch.load("/workspace/models/audiomae/pretrained.pth", map_location="cpu")["model"]
+        # Load the weights into the model
+        self.model.load_state_dict(checkpoint, strict=False)
 
         self.model.eval()
+
 
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
 
