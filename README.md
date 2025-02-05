@@ -174,8 +174,14 @@ Results on HSN:
 
 investigation on Audiomae
 | audiomae| 0.38 |0.79|(https://wandb.ai/deepbirddetect/BioFoundation/runs/audiomae_finetuning_BirdSet_HSN_1_2025-01-28_135649)|20epoch
+different check point 
+
+|audiomae|0.39|0.80|( https://wandb.ai/deepbirddetect/BioFoundation/runs/audiomae_finetuning_BirdSet_HSN_1_2025-02-03_150214)| 20epochs
 Lukas setup:
-| audiomae| 0.16 |0.18|( https://wandb.ai/deepbirddetect/BioFoundation/runs/audiomae_finetuning_BirdSet_HSN_1_2025-01-29_082945)
+
+| audiomae| 0.16 |0.18|( https://wandb.ai/deepbirddetect/BioFoundation/runs/audiomae_finetuning_BirdSet_HSN_1_2025-01-29_082945)|5epochs
+
+audiomae| 0.18|0.73|(https://wandb.ai/deepbirddetect/BioFoundation/runs/audiomae_finetuning_BirdSet_HSN_1_2025-01-30_162938)|29 epochs
 
 ### Running Linear Probing Experiments on BirdSet
 
