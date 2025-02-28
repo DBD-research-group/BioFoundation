@@ -65,11 +65,14 @@ class Wav2vec2SequenceClassifier(BirdSetModel):
                     try:
                         classifier_state_dict = {
                             key.replace("model.classifier.", ""): weight
-                            for key, weight in state_dict.items() if key.startswith("model.classifier.")
+                            for key, weight in state_dict.items()
+                            if key.startswith("model.classifier.")
                         }
                         self.classifier.load_state_dict(classifier_state_dict)
                     except Exception as e:
-                        log.error(f"Could not load classifier state dict from local checkpoint: {e}")      
+                        log.error(
+                            f"Could not load classifier state dict from local checkpoint: {e}"
+                        )
 
         self.model = AutoModelForAudioClassification.from_pretrained(
             self.checkpoint,
