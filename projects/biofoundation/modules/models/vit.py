@@ -48,7 +48,7 @@ class ViTModel(BirdSetModel):
         checkpoint_path = "/workspace/models/vit/vit_single_mixup.pt"
         state_dict = torch.load(checkpoint_path)
 
-        self.model.model.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict)
         self.model.eval()
 
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
