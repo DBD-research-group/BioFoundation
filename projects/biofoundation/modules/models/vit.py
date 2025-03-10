@@ -48,7 +48,11 @@ class ViTModel(BirdSetModel):
         checkpoint_path = "/workspace/models/vit/vit_single_mixup.pt"
         state_dict = torch.load(checkpoint_path)
 
-        self.model.load_state_dict(state_dict)
+        keys_to_remove = [key for key in state_dict.keys() if "heads.head" in key]
+        for key in keys_to_remove:
+            del state_dict[key]
+
+        self.model.load_state_dict(state_dict, strict=False)
         self.model.eval()
 
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
@@ -69,6 +73,4 @@ class ViTModel(BirdSetModel):
             torch.Tensor: The output of the classifier.
         """
 
-        embeddings = self.get_embeddings(input_values)
-
-        return self.classifier(embeddings)
+        return self.classifier(self.model(input_values))
