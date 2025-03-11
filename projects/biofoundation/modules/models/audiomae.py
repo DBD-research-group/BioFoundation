@@ -50,7 +50,7 @@ class AudioMAEModel(BirdSetModel):
             )
         else:
             self.classifier = classifier
-        
+
         if local_checkpoint:
             self._load_local_checkpoint()
 

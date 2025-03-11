@@ -4,19 +4,22 @@ import threading
 import time
 
 # Define the timeout in seconds
-TIMEOUT = 1800 # 30 minutes
+TIMEOUT = 1800  # 30 minutes
 
 # Get all arguments from the caller script (including the script name itself)
 args = sys.argv[1:]
 
+
 # Function to run the subprocess
 def run_script():
-    return subprocess.Popen(['python'] + args)
+    return subprocess.Popen(["python"] + args)
+
 
 # Function to terminate the process if it exceeds the timeout
 def terminate_process(proc):
     proc.terminate()
     print("Process terminated due to timeout.")
+
 
 # Create the process
 process = run_script()
