@@ -55,9 +55,11 @@ class ViTModel(BirdSetModel):
         self.model.load_state_dict(state_dict, strict=False)
         self.model.eval()
 
-    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
-        # needed?
-        pass
+    def duplicate_channels(self, tensor):
+        if tensor.shape[1] == 1:
+            # Duplicate the single channel to three channels
+            tensor = tensor.repeat(1, 3, 1, 1)
+        return tensor
 
     def forward(
         self, input_values: torch.Tensor, labels: torch.Tensor | None
@@ -72,5 +74,5 @@ class ViTModel(BirdSetModel):
         Returns:
             torch.Tensor: The output of the classifier.
         """
-
+        input_values = self.duplicate_channels(input_values)
         return self.classifier(self.model(input_values))
