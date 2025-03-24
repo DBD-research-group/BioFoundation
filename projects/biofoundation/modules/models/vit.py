@@ -2,9 +2,15 @@ from biofoundation.modules.models.birdset_model import BirdSetModel
 from torch import nn
 import torchvision.models as models
 import torch
+import torch.nn.functional as F
+from torchaudio.compliance import kaldi
 
 
 class ViTModel(BirdSetModel):
+    """
+    ViT-B-16 model implemented like in the iNaturalist paper: https://openreview.net/pdf?id=QCY01LvyKm.
+    """
+
     EMBEDDING_SIZE = 768
 
     def __init__(
@@ -22,7 +28,6 @@ class ViTModel(BirdSetModel):
             embedding_size=embedding_size,
             local_checkpoint=local_checkpoint,
             load_classifier_checkpoint=load_classifier_checkpoint,
-            freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
         )
 
@@ -38,10 +43,6 @@ class ViTModel(BirdSetModel):
         if local_checkpoint:
             self._load_local_checkpoint()
 
-        if freeze_backbone:
-            for param in self.model.parameters():
-                param.requires_grad = False
-
     def load_model(self) -> None:
         self.model = models.vit_b_16(weights=None)
 
@@ -53,7 +54,6 @@ class ViTModel(BirdSetModel):
             del state_dict[key]
 
         self.model.load_state_dict(state_dict, strict=False)
-        self.model.eval()
 
     def duplicate_channels(self, tensor):
         if tensor.shape[1] == 1:
@@ -74,5 +74,30 @@ class ViTModel(BirdSetModel):
         Returns:
             torch.Tensor: The output of the classifier.
         """
-        input_values = self.duplicate_channels(input_values)
-        return self.classifier(self.model(input_values))
+        # input_values = self.duplicate_channels(input_values)
+        spectograms = self.preprocess(input_values)
+        return self.model(spectograms)
+
+    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+
+        device = input_values.device
+        melspecs = []
+        for waveform in input_values:
+            if waveform.shape[-1] < 512:
+                waveform = F.pad(waveform, (0, 512 - waveform.shape[-1]))
+            melspec = kaldi.fbank(
+                waveform,
+                window_type="hanning",
+                low_freq=50,
+                high_freq=11025,
+                sample_frequency=22050,
+                num_mel_bins=128,
+                frame_length=512 / 22050 * 1000,  # Convert samples to milliseconds,
+                frame_shift=128 / 22050 * 1000,  # Convert samples to milliseconds,
+            )
+
+            melspecs.append(melspec)
+        melspecs = torch.stack(melspecs).to(device)
+        melspecs = melspecs.unsqueeze(1)
+        print(melspecs.shape)
+        return melspecs

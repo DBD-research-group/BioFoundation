@@ -4,7 +4,7 @@ model:
   
 
 model_name: vit
-model_type: vision
+model_type: waveform
 torch_compile: False
 sampling_rate: 22_050
 normalize_spectrogram: False
