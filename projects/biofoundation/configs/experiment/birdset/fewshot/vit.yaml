@@ -6,13 +6,6 @@ defaults:
 
 tags: ["biofoundation", "vit", "fewshot"]
 
-datamodule:
-  transforms:
-    preprocessing:
-      resizer:
-        target_width: 224  
-        target_height: 224
-
 logger:
   wandb:
     tags: ${tags}

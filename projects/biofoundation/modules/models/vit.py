@@ -82,6 +82,7 @@ class ViTModel(BirdSetModel):
 
         device = input_values.device
         melspecs = []
+        print("before processing:" + str(input_values.shape))
         for waveform in input_values:
             if waveform.shape[-1] < 512:
                 waveform = F.pad(waveform, (0, 512 - waveform.shape[-1]))
@@ -92,12 +93,12 @@ class ViTModel(BirdSetModel):
                 high_freq=11025,
                 sample_frequency=22050,
                 num_mel_bins=128,
-                frame_length=512 / 22050 * 1000,  # Convert samples to milliseconds,
-                frame_shift=128 / 22050 * 1000,  # Convert samples to milliseconds,
+                frame_shift=10,  # Convert samples to milliseconds,
+                frame_length=25,  # Convert samples to milliseconds,
             )
 
             melspecs.append(melspec)
         melspecs = torch.stack(melspecs).to(device)
         melspecs = melspecs.unsqueeze(1)
-        print(melspecs.shape)
+        print("after processing" + str(melspecs.shape))
         return melspecs
