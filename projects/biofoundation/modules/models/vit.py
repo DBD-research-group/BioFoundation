@@ -82,7 +82,8 @@ class ViTModel(BirdSetModel):
 
         device = input_values.device
         melspecs = []
-        print("before processing:" + str(input_values.shape))
+        target_length = 512
+
         for waveform in input_values:
             if waveform.shape[-1] < 512:
                 waveform = F.pad(waveform, (0, 512 - waveform.shape[-1]))
@@ -93,12 +94,38 @@ class ViTModel(BirdSetModel):
                 high_freq=11025,
                 sample_frequency=22050,
                 num_mel_bins=128,
-                frame_shift=10,  # Convert samples to milliseconds,
-                frame_length=25,  # Convert samples to milliseconds,
             )
 
+            # Pad or crop mel spectrogram to fixed width (time dimension = 512)
+            if melspec.shape[0] < target_length:
+                pad_amount = target_length - melspec.shape[0]
+                melspec = F.pad(melspec, (0, 0, 0, pad_amount))
+            else:
+                melspec = melspec[:target_length, :]
+
+            # Normalize the dicibel converted mel spectrogram to the range [0, 255]
+            epsilon = 1e-10  # Avoid log(0)
+            melspec = 10 * torch.log10(melspec + epsilon)
+
+            # Normalize to [0, 255] with fixed decibel range
+            min_db = -80
+            max_db = 0
+            melspec = (melspec - min_db) / (max_db - min_db)
+            melspec = torch.clamp(melspec, 0, 1) * 255
+
+            # Convert to uint8
+            melspec = melspec.to(torch.uint8).to(torch.float32)
+
             melspecs.append(melspec)
+
         melspecs = torch.stack(melspecs).to(device)
         melspecs = melspecs.unsqueeze(1)
-        print("after processing" + str(melspecs.shape))
+
+        # Resize the tensor to [32, 1, 224, 224]
+        melspecs = F.interpolate(
+            melspecs, size=(224, 224), mode="bilinear", align_corners=False
+        )
+
+        # convert gray scale to 3 channels (RGB)
+        melspecs = melspecs.repeat(1, 3, 1, 1)
         return melspecs
