@@ -43,6 +43,11 @@ class ViTModel(BirdSetModel):
         if local_checkpoint:
             self._load_local_checkpoint()
 
+        if freeze_backbone:
+            for name, param in self.model.named_parameters():
+                if "heads.head" not in name:
+                    param.requires_grad = False
+
     def load_model(self) -> None:
         self.model = models.vit_b_16(weights=None)
 
