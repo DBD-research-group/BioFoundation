@@ -46,10 +46,11 @@ class MulticlassMetricsConfig:
             )
         )
 
+
 class GhaniMetricsConfig(MulticlassMetricsConfig):
     """
     A class for metrics from the Ghani et al. paper (Global birdsong embeddings enable superior transfer learning  for bioacoustic classification) used during model training and evaluation.
-    It supports multiclass classification. 
+    It supports multiclass classification.
     """
 
     def __init__(self, num_labels: int = 21):
@@ -76,12 +77,12 @@ class GhaniMetricsConfig(MulticlassMetricsConfig):
                     num_classes=num_labels,
                     # average='macro',
                     top_k=3,
-                )
+                ),
                 # F1 is same as T1 in multiclass?
-                #"F1": torchmetrics.F1Score(
+                # "F1": torchmetrics.F1Score(
                 #    task="multiclass",
                 #    num_classes=num_labels,
-                #),
+                # ),
             }
         )
         self.eval_complete: torchmetrics.MetricCollection = (

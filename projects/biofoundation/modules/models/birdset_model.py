@@ -3,6 +3,7 @@ from torch import nn
 import torch
 from birdset.configs import PretrainInfoConfig
 from birdset.utils import pylogger
+
 log = pylogger.get_pylogger(__name__)
 
 
@@ -49,16 +50,18 @@ class BirdSetModel(nn.Module):
 
     def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
         return input_values
-    
+
     def _load_local_checkpoint(self):
         state_dict = torch.load(self.local_checkpoint)["state_dict"]
         model_state_dict = {
             key.replace("model.model.", ""): weight
-            for key, weight in state_dict.items() if key.startswith("model.model")
+            for key, weight in state_dict.items()
+            if key.startswith("model.model")
         }
         self.model.load_state_dict(model_state_dict)
-        log.info(f">> Loaded model state dict from local checkpoint: {self.local_checkpoint}")
-
+        log.info(
+            f">> Loaded model state dict from local checkpoint: {self.local_checkpoint}"
+        )
 
         # Process the keys for the classifier
         if self.classifier:
@@ -66,9 +69,14 @@ class BirdSetModel(nn.Module):
                 try:
                     classifier_state_dict = {
                         key.replace("model.classifier.", ""): weight
-                        for key, weight in state_dict.items() if key.startswith("model.classifier.")
+                        for key, weight in state_dict.items()
+                        if key.startswith("model.classifier.")
                     }
                     self.classifier.load_state_dict(classifier_state_dict)
-                    log.info(f">> Also loaded classifier state dict from local checkpoint: {self.local_checkpoint}")
+                    log.info(
+                        f">> Also loaded classifier state dict from local checkpoint: {self.local_checkpoint}"
+                    )
                 except Exception as e:
-                    log.error(f"Could not load classifier state dict from local checkpoint: {e}")  
+                    log.error(
+                        f"Could not load classifier state dict from local checkpoint: {e}"
+                    )

@@ -2,6 +2,7 @@ import torch
 import warnings
 import torchmetrics
 
+
 class BalancedAccuracy(torchmetrics.Metric):
     def __init__(self, adjusted=False, num_classes=None):
         super().__init__(dist_sync_on_step=False)

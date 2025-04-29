@@ -26,7 +26,7 @@ class BEATsModel(BirdSetModel):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
         classifier: nn.Module | None = None,
-        pretrain_info = None,
+        pretrain_info=None,
     ) -> None:
         super().__init__(
             num_classes=num_classes,
