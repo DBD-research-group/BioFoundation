@@ -1,0 +1,13 @@
+model: 
+  _target_: biofoundation.modules.models.resnet.ResNet50
+  num_classes: null
+  
+
+model_name: resnet50
+model_type: waveform
+torch_compile: False
+sampling_rate: 22_050
+normalize_spectrogram: False
+normalize_waveform: False
+embedding_size: 1000
+length: 3

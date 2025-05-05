@@ -2,11 +2,11 @@
 #package global is neccessary!
 defaults:
   - birdset/finetuning/finetuning_config.yaml 
-  - override /module/network: vit.yaml
+  - override /module/network: resnet50.yaml
 
 datamodule:
   transforms:
     max_length: 5
   dataset:
-    dataset_name: POW
-    hf_name: POW
+    dataset_name: HSN
+    hf_name: HSN
