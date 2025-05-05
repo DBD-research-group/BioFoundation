@@ -9,3 +9,4 @@ module:
     model:
       checkpoint: /workspace/models/aves/birdaves-biox-base.torchaudio.pt 
       config: /workspace/models/aves/birdaves-biox-base.torchaudio.model_config.json
+    model_name: bird_aves
