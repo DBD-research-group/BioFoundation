@@ -3,7 +3,3 @@
 defaults:
   - beans/linearprobing/linearprobing_config.yaml  
   - override /module/network: vit.yaml
-
-datamodule:
-  transforms:
-    max_length: 5

@@ -4,6 +4,8 @@ import torchvision.models as models
 import torch
 import torch.nn.functional as F
 from torchaudio.compliance import kaldi
+import torchaudio.transforms as T
+import torchvision.transforms as TV
 
 
 class ViTModel(BirdSetModel):
@@ -77,7 +79,7 @@ class ViTModel(BirdSetModel):
         spectograms = self.preprocess(input_values)
         return self.model(spectograms)
 
-    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+    def preprocess_old(self, input_values: torch.Tensor) -> torch.Tensor:
 
         device = input_values.device
         melspecs = []
@@ -128,3 +130,93 @@ class ViTModel(BirdSetModel):
         # convert gray scale to 3 channels (RGB)
         melspecs = melspecs.repeat(1, 3, 1, 1)
         return melspecs
+    
+    def preprocess(self, batch_waveforms, sample_rate=22050):
+        TARGET_SR = 22050
+        WINDOW_DURATION = 3.0
+        WINDOW_SIZE = int(TARGET_SR * WINDOW_DURATION)
+        STRIDE_SIZE = WINDOW_SIZE // 2
+        MEL_BINS = 128
+        MEL_LOW = 50
+        MEL_HIGH = TARGET_SR // 2
+        FRAME_LENGTH = 512 * 1000 / TARGET_SR  # in ms
+        FRAME_SHIFT = 128 * 1000 / TARGET_SR
+        TARGET_SIZE = (224, 224)
+
+        def resample_if_needed(waveform, orig_sr):
+            if orig_sr != TARGET_SR:
+                resampler = T.Resample(orig_sr, TARGET_SR)
+                waveform = resampler(waveform)
+            return waveform
+
+        def pad_or_trim(waveform, length):
+            if waveform.size(-1) < length:
+                pad = length - waveform.size(-1)
+                waveform = torch.nn.functional.pad(waveform, (0, pad))
+            return waveform[..., :length]
+
+        def chunk_audio(waveform):
+            total_len = waveform.size(-1)
+            chunks = []
+            for start in range(0, total_len, STRIDE_SIZE):
+                end = start + WINDOW_SIZE
+                chunk = pad_or_trim(waveform[..., start:end], WINDOW_SIZE)
+                chunks.append(chunk)
+            return chunks
+
+        def extract_features(wav_chunk):
+            feats = kaldi.fbank(wav_chunk,
+                        num_mel_bins=MEL_BINS,
+                        sample_frequency=TARGET_SR,
+                        frame_length=FRAME_LENGTH,
+                        frame_shift=FRAME_SHIFT,
+                        dither=0.0,
+                        low_freq=MEL_LOW,
+                        high_freq=MEL_HIGH,
+                        use_energy=False,
+                        window_type='hanning')
+            return feats
+
+        def log_mel_to_uint8(log_mel):
+            db = 20 * torch.log10(torch.clamp(log_mel, min=1e-5))
+            db -= db.min()
+            db /= db.max()
+            img = (db * 255).clamp(0, 255).byte().T  # [mel, time]
+            return img
+
+        def format_for_vit(img_gray):
+            img_rgb = img_gray.unsqueeze(0).repeat(3, 1, 1).float() / 255.0
+            return TV.Resize(TARGET_SIZE, interpolation=TV.InterpolationMode.BILINEAR)(img_rgb)
+
+        batch_size = batch_waveforms.size(0)
+        all_chunks = []
+        max_chunks = 0
+
+        for waveform in batch_waveforms:
+            # [C, T] → mono
+            if waveform.dim() == 1:
+                waveform = waveform.unsqueeze(0)
+            if waveform.size(0) > 1:
+                waveform = waveform.mean(dim=0, keepdim=True)
+
+            waveform = resample_if_needed(waveform, sample_rate)
+            chunks = chunk_audio(waveform)
+            images = []
+            for chunk in chunks:
+                mel = extract_features(chunk)
+                img_gray = log_mel_to_uint8(mel)
+                img_rgb = format_for_vit(img_gray)
+                images.append(img_rgb)
+            max_chunks = max(max_chunks, len(images))
+            all_chunks.append(images)
+
+        # Pad chunks so all have same length
+        for i in range(batch_size):
+            num_chunks = len(all_chunks[i])
+            if num_chunks < max_chunks:
+                pad_img = torch.zeros((3, *TARGET_SIZE))
+                all_chunks[i] += [pad_img] * (max_chunks - num_chunks)
+
+        #batch_tensor = torch.stack([seq[0] for seq in all_chunks])  # [B, 3, 224, 224] We just take first chunk for now
+        batch_tensor = torch.stack([torch.stack(seq).mean(dim=0) for seq in all_chunks]) # Average over chunks
+        return batch_tensor
