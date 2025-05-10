@@ -18,11 +18,15 @@ def format_values(values):
         i = -1
         while rounded[max_idx] == rounded[np.argsort(rounded)[i]]:
             formatted[np.argsort(rounded)[i]] = f"\\textbf{{{rounded[np.argsort(rounded)[i]]:.1f}}}"
+            if i == -len(rounded):
+                break
             i -= 1
 
         second_max_idx = np.argsort(rounded)[i]
         while rounded[second_max_idx] == rounded[np.argsort(rounded)[i]]:
             formatted[np.argsort(rounded)[i]] = f"\\underline{{{rounded[np.argsort(rounded)[i]]:.1f}}}"
+            if i == -len(rounded):
+                break
             i -= 1
 
         formatted_columns.append(formatted)
