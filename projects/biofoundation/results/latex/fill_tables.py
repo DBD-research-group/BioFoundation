@@ -15,6 +15,9 @@ def format_values(values):
         max_idx = np.argmax(rounded)
         second_max_idx = np.argsort(rounded)[-2]
         formatted = [f"{val:.1f}" if val > 0 else "-" for val in rounded]
+        if max_idx == second_max_idx: # In case of same values (Not for second best values)
+            second_max_idx = np.argsort(rounded)[-3]
+            formatted[np.argsort(rounded)[-1]] = f"\\textbf{{{rounded[np.argsort(rounded)[-1]]:.1f}}}"
         formatted[max_idx] = f"\\textbf{{{rounded[max_idx]:.1f}}}"
         formatted[second_max_idx] = f"\\underline{{{rounded[second_max_idx]:.1f}}}"
         formatted_columns.append(formatted)
