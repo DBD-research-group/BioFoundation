@@ -1,0 +1,10 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - birdset/linearprobing/linearprobing_config.yaml 
+  - override /module/network: vit.yaml
+
+datamodule:
+  dataset:
+    dataset_name: POW
+    hf_name: POW

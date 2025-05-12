@@ -79,26 +79,33 @@ class ViTModel(BirdSetModel):
         spectograms = self.preprocess(input_values)
         return self.model(spectograms)
 
+    #! Seems very similar to the other implementation except the chunking and frame_length and frame_shift which are bit different in the def values
     def preprocess_old(self, input_values: torch.Tensor) -> torch.Tensor:
-
+        TARGET_SR = 22050
+        FRAME_LENGTH = 512 * 1000 / TARGET_SR  # in ms
+        FRAME_SHIFT = 128 * 1000 / TARGET_SR
+    
         device = input_values.device
         melspecs = []
         target_length = 512
 
         for waveform in input_values:
-            if waveform.shape[-1] < 512:
+            if waveform.shape[-1] < 512: #! Does this make sense? But shouldnt be a problem anyway
                 waveform = F.pad(waveform, (0, 512 - waveform.shape[-1]))
             melspec = kaldi.fbank(
                 waveform,
+                frame_length=FRAME_LENGTH,
+                frame_shift=FRAME_SHIFT,
                 window_type="hanning",
                 low_freq=50,
                 high_freq=11025,
                 sample_frequency=22050,
                 num_mel_bins=128,
             )
+            print(melspec.shape)
 
             # Pad or crop mel spectrogram to fixed width (time dimension = 512)
-            if melspec.shape[0] < target_length:
+            if melspec.shape[0] < target_length: 
                 pad_amount = target_length - melspec.shape[0]
                 melspec = F.pad(melspec, (0, 0, 0, pad_amount))
             else:
@@ -143,7 +150,7 @@ class ViTModel(BirdSetModel):
         FRAME_SHIFT = 128 * 1000 / TARGET_SR
         TARGET_SIZE = (224, 224)
 
-        def resample_if_needed(waveform, orig_sr):
+        def resample_if_needed(waveform, orig_sr): #! Brauch man nicht
             if orig_sr != TARGET_SR:
                 resampler = T.Resample(orig_sr, TARGET_SR)
                 waveform = resampler(waveform)
