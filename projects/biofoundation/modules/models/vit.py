@@ -4,6 +4,7 @@ import torchvision.models as models
 import torch
 import torch.nn.functional as F
 from torchaudio.compliance import kaldi
+import torchaudio.transforms as T
 
 
 class ViTModel(BirdSetModel):
@@ -43,6 +44,23 @@ class ViTModel(BirdSetModel):
         if local_checkpoint:
             self._load_local_checkpoint()
 
+        self.mel_spectrogram = T.MelSpectrogram(
+            window_fn=torch.hann_window,
+            sample_rate=22050,
+            n_fft=1024,
+            win_length=512,
+            hop_length=128,
+            f_min=50,
+            f_max=11025,
+            n_mels=128,
+            power=2.0,
+        )
+
+        self.db_transform = T.AmplitudeToDB(
+            top_db=80,
+            stype="power",
+        )
+
     def load_model(self) -> None:
         self.model = models.vit_b_16(weights=None)
 
@@ -69,8 +87,29 @@ class ViTModel(BirdSetModel):
             torch.Tensor: The output of the classifier.
         """
         # input_values = self.duplicate_channels(input_values)
-        spectograms = self.preprocess(input_values)
+        spectograms = self.preprocess3(input_values)
         return self.model(spectograms)
+
+    def preprocess3(self, input_values: torch.Tensor) -> torch.Tensor:
+        mel_db = self.mel_spectrogram(input_values)
+        # mel_db = self.db_transform(mel_spec) breaks the training success
+
+        mel_db_normalized = (mel_db - mel_db.min()) / (
+            mel_db.max() - mel_db.min() + 1e-10
+        )
+        mel_img = (mel_db_normalized * 255).round().clamp(0, 255).to(torch.float32)
+        mel_img = F.interpolate(
+            mel_img, size=(224, 224), mode="bilinear", align_corners=False
+        )
+        mel_img = mel_img.repeat(1, 3, 1, 1)
+        return mel_img
+
+    def preprocess2(self, input_values: torch.Tensor) -> torch.Tensor:
+        input_values = F.interpolate(
+            input_values, size=(224, 224), mode="bilinear", align_corners=False
+        )
+        input_values = input_values.repeat(1, 3, 1, 1)
+        return input_values
 
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
 
