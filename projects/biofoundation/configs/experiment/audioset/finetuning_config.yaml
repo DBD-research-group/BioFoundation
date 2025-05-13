@@ -34,6 +34,7 @@ module:
       preprocess_in_model: True
 
 trainer:
+  #limit_val_batches: ${datamodule.val_batches} 
   min_epochs: 1
   max_epochs: 5
   devices: [3]
