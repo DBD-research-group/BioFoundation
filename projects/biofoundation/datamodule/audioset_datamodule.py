@@ -68,4 +68,19 @@ class AS20DataModule(BaseDataModuleHF):
         Preprocess the data
         """
 
+        dataset = dataset.rename_column("json", "labels")
+        dataset = dataset.map(
+            lambda x: {"labels": x["labels"]["label"]},
+            remove_columns=["labels"],
+            load_from_cache_file=True,
+            num_proc=self.dataset_config.n_workers,
+        )
+
+        dataset = dataset.map(
+                self._classes_one_hot,
+                batched=True,
+                batch_size=200,
+                load_from_cache_file=True,
+                num_proc=self.dataset_config.n_workers,
+            )
         return dataset
