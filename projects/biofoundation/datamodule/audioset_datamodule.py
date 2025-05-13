@@ -25,7 +25,43 @@ class AS20DataModule(BaseDataModuleHF):
     ):
         super().__init__(dataset=dataset, loaders=loaders, transforms=transforms)
 
-    
+
+    def _load_data(self, decode: bool = True) -> DatasetDict:
+        """
+        Load audio dataset from Hugging Face Datasets. Same as the base datamodule method but num_proc set to 1.
+
+        Returns HF dataset with audio column casted to Audio feature, containing audio data as numpy array and sampling rate.
+        """
+        log.info("> Loading data set.")
+
+        dataset_args = {
+            "path": self.dataset_config.hf_path,
+            "cache_dir": self.dataset_config.data_dir,
+            "num_proc": 1,
+            "trust_remote_code": True,
+        }
+
+        dataset = load_dataset(**dataset_args)
+        if isinstance(dataset, IterableDataset | IterableDatasetDict):
+            log.error("Iterable datasets not supported yet.")
+            return
+        assert isinstance(dataset, DatasetDict | Dataset)
+        dataset = self._ensure_train_test_splits(dataset)
+
+        if self.dataset_config.subset:
+            dataset = self._fast_dev_subset(dataset, self.dataset_config.subset)
+
+        dataset = dataset.rename_column("wav", "audio")
+
+        dataset = dataset.cast_column(
+            column="audio",
+            feature=Audio(
+                sampling_rate=self.dataset_config.sampling_rate,
+                mono=True,
+                decode=decode,
+            ),
+        )
+        return dataset    
 
     def _preprocess_data(self, dataset):
         """
