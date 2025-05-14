@@ -24,8 +24,8 @@ logger:
 
 module:
   optimizer:
-    lr: 1e-4 # 1e-4 3e-4            
-    weight_decay: 5e-4 # 5e-4 1e-5
+    lr: 1e-4
+    weight_decay: 5e-4
   loss:
     _target_: torch.nn.BCEWithLogitsLoss
   network:
@@ -35,8 +35,8 @@ module:
 
 trainer:
   #limit_val_batches: ${datamodule.val_batches} 
-  min_epochs: 1
-  max_epochs: 5
+  min_epochs: 25
+  max_epochs: 50
   devices: [3]
 
 datamodule: 
@@ -63,6 +63,7 @@ callbacks:
     save_top_k: 1
     every_n_epochs: 1
     every_n_train_steps: null
+    filename: ${module.network.model_name}_${datamodule.dataset.dataset_name}_{epoch:02d}
   early_stopping:
     _target_: lightning.pytorch.callbacks.EarlyStopping
     monitor: "val/BCEWithLogitsLoss_epoch"
