@@ -17,9 +17,9 @@ test: True
 logger:
   wandb:
     tags: ${tags}
-    group: "biofoundation_${module.network.model_name}_attentive_BirdSet__${datamodule.dataset.dataset_name}"
+    group: "biofoundation_${module.network.model_name}_pooling_ablation_BirdSet__${datamodule.dataset.dataset_name}"
     mode: online
-    version: ${module.network.model_name}_attentive_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
+    version: ${module.network.model_name}_${module.network.model.pooling}_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
  
 module:
   optimizer:
@@ -31,10 +31,11 @@ module:
   #_target_: birdset.modules.losses.focal_loss.MultiLabelFocalLoss
   network:
     torch_compile: False
+    model_name: BEATs_NatureLM
     model:
+      checkpoint_path: '/workspace/models/beats/beats_naturelm.pt'
       preprocess_in_model: True
       freeze_backbone: True
-      pooling: "attentive"
     # pretrain_info:
     #   hf_path: DBD-research-group/BirdSet
     #   hf_name: SNE
