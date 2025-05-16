@@ -25,6 +25,8 @@ class AvesClassifier(BirdSetModel):
         self,
         num_classes: int = None,
         embedding_size: int = EMBEDDING_SIZE,
+        checkpoint: str = "/workspace/models/aves/aves-base-bio.torchaudio.pt",
+        config: str = "/workspace/models/aves/aves-base-bio.torchaudio.model_config.json",
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
@@ -44,7 +46,7 @@ class AvesClassifier(BirdSetModel):
         )
 
         self.model = None  # Placeholder for the loaded model
-        self.load_model()
+        self.load_model(checkpoint, config)
         if classifier is None:
             self.classifier = nn.Linear(embedding_size, num_classes)
         else:
@@ -57,16 +59,14 @@ class AvesClassifier(BirdSetModel):
             for param in self.model.parameters():
                 param.requires_grad = False
 
-    def load_model(self) -> None:
+    def load_model(self, checkpoint, config) -> None:
         """
         Load the model from shared storage.
         """
-        self.config = self.load_config(
-            "/workspace/models/aves/aves-base-bio.torchaudio.model_config.json"
-        )
+        self.config = self.load_config(config)
         self.model = wav2vec2_model(**self.config, aux_num_out=None)
         self.model.load_state_dict(
-            torch.load("/workspace/models/aves/aves-base-bio.torchaudio.pt")
+            torch.load(checkpoint)
         )
         self.model.feature_extractor.requires_grad_(True)
 
