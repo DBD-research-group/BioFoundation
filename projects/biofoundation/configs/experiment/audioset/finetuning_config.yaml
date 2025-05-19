@@ -40,6 +40,8 @@ trainer:
   devices: [3]
 
 datamodule: 
+  transforms:
+    max_length: ${module.network.length}
   loaders:
     train:
       batch_size: 32

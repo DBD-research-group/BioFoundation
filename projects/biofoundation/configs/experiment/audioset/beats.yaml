@@ -1,0 +1,13 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - audioset/finetuning_config.yaml 
+  - override /module/network: beats.yaml 
+
+datamodule:
+  dataset:
+    debug: True
+
+module:
+  output_activation: 
+    _target_: "torch.nn.Identity"

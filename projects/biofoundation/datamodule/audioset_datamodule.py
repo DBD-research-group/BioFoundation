@@ -10,7 +10,6 @@ from datasets import (
     Dataset,
 )
 from birdset.utils import pylogger
-import logging
 
 log = pylogger.get_pylogger(__name__)
 
@@ -22,8 +21,10 @@ class AS20DataModule(BaseDataModuleHF):
         dataset: DatasetConfig = DatasetConfig(),
         loaders: LoadersConfig = LoadersConfig(),
         transforms: BirdSetTransformsWrapper = BirdSetTransformsWrapper(),
+        debug: bool = False, # It is quiet hard to get preprocessing right so debug mode for quicker testing
     ):
         super().__init__(dataset=dataset, loaders=loaders, transforms=transforms)
+        self.debug = debug
 
 
     def _load_data(self, decode: bool = True) -> DatasetDict:
@@ -92,4 +93,12 @@ class AS20DataModule(BaseDataModuleHF):
                 load_from_cache_file=True,
                 num_proc=self.dataset_config.n_workers,
             )
+
+        if self.debug:
+            if isinstance(dataset, DatasetDict):
+                for split in dataset.keys():
+                    dataset[split] = dataset[split].select(range(200))
+            else:
+                dataset = dataset.select(range(200))
+            log.warning("Debug mode: limiting dataset to 200 samples.")
         return dataset
