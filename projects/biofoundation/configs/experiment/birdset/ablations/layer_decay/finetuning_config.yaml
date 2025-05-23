@@ -9,7 +9,7 @@ defaults:
   - override /datamodule/transforms: bird_default_multilabel.yaml
   - override /paths: default.yaml
   - override /hydra: default.yaml
-tags: ["biofoundation", "BirdSet", "augmentations", "attentive", "${module.network.model_name}"]
+tags: ["biofoundation", "BirdSet", "augmentations", "finetune", "${module.network.model_name}"]
 seed: 1
 train: True
 test: True
@@ -17,27 +17,21 @@ test: True
 logger:
   wandb:
     tags: ${tags}
-    group: "biofoundation_${module.network.model_name}_finetuning_pooling_ablation_BirdSet__${datamodule.dataset.dataset_name}"
+    group: "biofoundation_${module.network.model_name}_ablation_layerdecay_BirdSet__${datamodule.dataset.dataset_name}"
     mode: online
-    version: ${module.network.model_name}_finetuning_${module.network.model.pooling}_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
+    version: ${module.network.model_name}_finetune_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
  
 module:
   optimizer:
     lr: 1e-4
     weight_decay: 1e-4
-    extras:
-      layer_decay: 0.75
-      decay_type: 'right'
-      no_weight_decay_list: []
   loss:
   #  _target_: birdset.modules.losses.asymmetric_loss.AsymmetricLossMultiLabel
     _target_: torch.nn.BCEWithLogitsLoss
   #_target_: birdset.modules.losses.focal_loss.MultiLabelFocalLoss
   network:
     torch_compile: False
-    model_name: BEATs_NatureLM
     model:
-      checkpoint_path: '/workspace/models/beats/beats_naturelm.pt'
       preprocess_in_model: True
     # pretrain_info:
     #   hf_path: DBD-research-group/BirdSet
@@ -56,7 +50,6 @@ datamodule:
     class_weights_sampler: null
     classlimit: 600
     eventlimit: 5
-    use_test_as_valid: True
   transforms:
     max_length: ${module.network.length}
     preprocessing:

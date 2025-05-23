@@ -125,6 +125,11 @@ class BaseModule(L.LightningModule):
         # configure eval_complete metrics
         self.test_complete_metrics = self.metrics.eval_complete.clone(prefix="test/")
 
+        # configure additional val metrics when using multiple dataloaders
+        self.valid2_metric = self.metrics.main_metric.clone()
+        self.valid2_add_metrics = self.metrics.add_metrics.clone(prefix="val/")
+        self.valid2_metric_best = self.metrics.val_metric_best.clone() 
+
         self.torch_compile = network.torch_compile
         self.model_name = network.model_name
 
@@ -161,8 +166,17 @@ class BaseModule(L.LightningModule):
                 no_weight_decay_list=self.no_weight_decay_list,
                 layer_decay=self.layer_decay
             )
+            # scale learning rate for layer decay
+            for param_group in params:
+                param_group["lr"] = (
+                    self.optimizer.keywords["lr"]
+                    * param_group["lr_scale"])
+                
         else:
             params = self.model.parameters()
+        
+        # filter out parameters that are not trainable
+        params = filter(lambda p: p.requires_grad, params)
         
         # strip extras from optimizer.keywords
         self.optimizer.keywords.pop("extras", None)
@@ -231,7 +245,7 @@ class BaseModule(L.LightningModule):
         # self.log_dict(self.train_add_metrics, **self.logging_params)
 
         return {"loss": train_loss}
-
+    
     def validation_step(self, batch, batch_idx):
         val_loss, preds, targets = self.model_step(batch, batch_idx)
         self.log(
@@ -262,6 +276,49 @@ class BaseModule(L.LightningModule):
     #         f"val/{self.valid_metric.__class__.__name__}_best",
     #         self.valid_metric_best.compute(),
     #     )
+
+    def validation_step(self, batch, batch_idx, dataloader_idx):
+        val_loss, preds, targets = self.model_step(batch, batch_idx)
+        if dataloader_idx == 0:
+            self.log(
+                f"val/{self.loss.__class__.__name__}",
+                val_loss,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+            )
+
+            #! Comment out for performance increase
+            self.valid_metric(preds, targets.int())
+            self.log(
+                f"val/{self.valid_metric.__class__.__name__}",
+                self.valid_metric,
+                **asdict(self.logging_params),
+            )
+        elif dataloader_idx == 1:
+            self.log(
+                f"val/{self.loss.__class__.__name__}",
+                val_loss,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+            )
+
+            #! Comment out for performance increase
+            self.valid2_metric(preds, targets.int())
+            self.log(
+                f"val/{self.valid2_metric.__class__.__name__}",
+                self.valid2_metric,
+                **asdict(self.logging_params),
+            )
+            if self.task == "multiclass":
+                self.valid2_add_metrics(preds, targets)
+            else:
+                self.valid2_add_metrics(preds, targets.int())
+            self.log_dict(self.valid2_add_metrics, **asdict(self.logging_params))
+        
+        return {"loss": val_loss, "preds": preds, "targets": targets}
+
 
     def test_step(self, batch, batch_idx):
         test_loss, preds, targets = self.model_step(batch, batch_idx)
