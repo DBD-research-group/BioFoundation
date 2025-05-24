@@ -277,7 +277,7 @@ class BaseModule(L.LightningModule):
     #         self.valid_metric_best.compute(),
     #     )
 
-    def validation_step(self, batch, batch_idx, dataloader_idx):
+    def validation_step(self, batch, batch_idx, dataloader_idx = 0):
         val_loss, preds, targets = self.model_step(batch, batch_idx)
         if dataloader_idx == 0:
             self.log(
