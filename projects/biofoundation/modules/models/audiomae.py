@@ -25,6 +25,8 @@ class AudioMAEModel(BirdSetModel):
         self,
         num_classes: int,
         embedding_size: int = EMBEDDING_SIZE,
+        checkpoint_path: str = "hf_hub:gaunernst/vit_base_patch16_1024_128.audiomae_as2m",
+        use_classifier: bool = True,
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
@@ -40,6 +42,8 @@ class AudioMAEModel(BirdSetModel):
             preprocess_in_model=preprocess_in_model,
         )
         self.model = None  # Placeholder for the loaded model
+        self.checkpoint_path = checkpoint_path
+        self.use_classifier = use_classifier
         self.load_model()
         self.num_classes = num_classes
 
@@ -63,7 +67,7 @@ class AudioMAEModel(BirdSetModel):
         Load the model from Huggingface.
         """
         self.model = timm.create_model(
-            "hf_hub:gaunernst/vit_base_patch16_1024_128.audiomae_as2m", pretrained=True
+            self.checkpoint_path, pretrained=True
         )
 
         self.model.eval()
@@ -101,7 +105,8 @@ class AudioMAEModel(BirdSetModel):
         """
 
         embeddings = self.get_embeddings(input_values)
-
+        if not self.use_classifier:
+            return embeddings 
         return self.classifier(embeddings)
 
     def get_embeddings(self, input_tensor: torch.Tensor) -> torch.Tensor:
@@ -117,5 +122,5 @@ class AudioMAEModel(BirdSetModel):
         if self.preprocess_in_model:
             input_values = self.preprocess(input_tensor)
         embeddings = self.model(input_values)
-
+        #! We can also get frame level embeddings for attentive probing and to fix problems check HF
         return embeddings
