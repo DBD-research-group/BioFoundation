@@ -186,7 +186,7 @@ class SoundNet(nn.Module):
                 .names
             )
         else:
-            self.num_classes = n_classes
+            self.num_classes = num_classes
 
         ds_fac = np.prod(np.array(factors)) * 4
         clip_length = seq_len // ds_fac
