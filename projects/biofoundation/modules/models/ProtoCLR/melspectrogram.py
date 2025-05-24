@@ -28,14 +28,14 @@ class Standardization(torch.nn.Module):
     def forward(self, x):
         return (x - self.mean) / self.std
 
-class MelSpectrogramProcessor:
+class MelSpectrogramProcessor(torch.nn.Module):
     def __init__(self, sample_rate=SR, n_mels=NMELS, n_fft=NFFT, hop_length=HOPLEN, f_min=FMIN, f_max=FMAX):
+        super().__init__()
         self.transform = nn.Sequential(
             T.MelSpectrogram(sample_rate=sample_rate, n_mels=n_mels, n_fft=n_fft, hop_length=hop_length, f_min=f_min, f_max=f_max),
             T.AmplitudeToDB(),
             Normalization(),
             Standardization(mean=MEAN, std=STD),
         )
-
-    def process(self, waveform):
+    def forward(self, waveform):
         return self.transform(waveform)

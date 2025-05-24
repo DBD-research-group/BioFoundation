@@ -19,7 +19,7 @@ class ProtoCLRModel(BirdSetModel):
     Github-Repository: https://github.com/ilyassmoummad/ProtoCLR
     Paper: https://arxiv.org/abs/2409.08589
     """
-    EMBEDDING_SIZE = 768
+    EMBEDDING_SIZE = 384
 
     def __init__(
         self,
@@ -41,6 +41,7 @@ class ProtoCLRModel(BirdSetModel):
             preprocess_in_model=preprocess_in_model,
         )
         self.model = None  # Placeholder for the loaded model
+        self.preprocessor = None  # Placeholder for the preprocessor
         self.load_model()
 
         if preprocess_in_model:
@@ -64,10 +65,10 @@ class ProtoCLRModel(BirdSetModel):
     def load_model(self) -> None:
        self.model = cvt13()
        self.model.load_state_dict(torch.load("/workspace/models/protoclr/protoclr.pth", map_location="cpu"))
-       self.model.to("cuda")
+
 
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
-        return self.preprocessor.process(input_values)
+        return self.preprocessor(input_values)
 
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
@@ -99,5 +100,5 @@ class ProtoCLRModel(BirdSetModel):
         if self.preprocess_in_model:
             input_values = self.preprocess(input_tensor)
 
-        output = self.model(input_values)
+        output = self.model.forward_features(input_values)
         return output
