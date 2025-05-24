@@ -14,11 +14,10 @@ python = ">=3.10,<3.11"
 scipy = "^1.11.3"
 ffprobe = "^0.5"
 # --------- pytorch --------- #
-torch = {version = "=2.0.1+cu118", source = "pytorch_gpu"}
-torchvision = {version = "=0.15.2+cu118", source = "pytorch_gpu"}
-torchaudio = {version = "=2.0.2+cu118", source = "pytorch_gpu"}
+torch = "2.2.0"
+torchvision = "0.17.0"
 lightning = "^2.2.2"
-torchmetrics= "^0.11"
+torchmetrics= "1.2.0"
 
 # --------- tensorflow --------- #
 tensorflow = {version = "2.14", extras = ["and-cuda"]}
@@ -58,15 +57,12 @@ pyrootutils = "^1.0.4"
 mlflow = "^2.11.0"
 pydub = "^0.25.1"
 tabulate = "^0.9.0"
-timm = "1.0.12"
+timm = "1.0.12" 
 #timm = "0.4.5" # for SSAST
 einops = "^0.8.0"
 tensorrt = "8.5.3.1"
 numba = "0.60.0"
-numpy = "^1.26.4"
-black = "^24.10.0"
 torchinfo = "^1.8.0"
-
 ipython = "8.18.1"
 librosa = "0.10.1"
 numpy = "1.26.4"
