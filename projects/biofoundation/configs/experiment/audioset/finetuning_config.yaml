@@ -10,7 +10,7 @@ defaults:
   - override /hydra: default.yaml
 tags: ["audioset-20k", "finetune", "${module.network.model_name}"]
 seed: 1
-train: True
+train: False
 test: True
 
 logger:

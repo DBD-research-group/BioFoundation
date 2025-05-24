@@ -19,8 +19,6 @@ class BEATsModel(BirdSetModel):
     """
 
     EMBEDDING_SIZE = 768
-    MEAN = torch.tensor(-4.268)
-    STD = torch.tensor(4.569)
 
     def __init__(
         self,
@@ -76,7 +74,7 @@ class BEATsModel(BirdSetModel):
         cfg = BEATsConfig(checkpoint["cfg"])
         self.model = BEATs(cfg)
         self.model.load_state_dict(checkpoint["model"])
-        self.model.predictor = None  # remove the predictor head
+        #self.model.predictor = None  # This should happen autom. if correct checkpoint
         self.model.eval()
 
     def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
@@ -101,6 +99,8 @@ class BEATsModel(BirdSetModel):
         """
         embeddings = self.get_embeddings(input_values, self.pooling)
         # flattend_embeddings = embeddings.reshape(embeddings.size(0), -1)
+        if self.model.predictor is not None:
+            return embeddings
         return self.classifier(embeddings)
 
     def get_embeddings(self, input_values: torch.Tensor, pooling) -> torch.Tensor:
@@ -115,10 +115,8 @@ class BEATsModel(BirdSetModel):
         """
         if self.preprocess_in_model:
             input_values = self._preprocess(input_values)
-        embeddings = self.model.extract_features(input_values)[
-            0
-        ]  # outputs a tensor of size 496x768
-        if pooling == "just_cls":
+        embeddings = self.model.extract_features(input_values)[0]
+        if pooling == "just_cls" and self.model.predictor is None: # It returns Probabilities otherwise
             # Use only the CLS token for classification
             # The CLS token is the first token in the sequence
             return embeddings[:, 0, :]

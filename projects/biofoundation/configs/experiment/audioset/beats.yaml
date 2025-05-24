@@ -5,9 +5,11 @@ defaults:
   - override /module/network: beats.yaml 
 
 datamodule:
-  dataset:
-    debug: True
+  debug: True
 
 module:
-  output_activation: 
-    _target_: "torch.nn.Identity"
+  network:
+    model: 
+      checkpoint_path: "/workspace/models/beats/BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt1.pt"
+  #output_activation: 
+    #_target_: "torch.nn.Identity"
