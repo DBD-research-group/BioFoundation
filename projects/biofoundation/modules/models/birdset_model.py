@@ -1,3 +1,4 @@
+from typing import Literal
 import datasets
 from torch import nn
 import torch
@@ -17,6 +18,7 @@ class BirdSetModel(nn.Module):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = False,
         pretrain_info: PretrainInfoConfig = None,
+        pooling: Literal["default"] | None = "default",
     ) -> None:
         super().__init__()
         self.num_classes = num_classes
@@ -26,6 +28,7 @@ class BirdSetModel(nn.Module):
         self.classifier = classifier
         self.embedding_size = embedding_size
         self.load_classifier_checkpoint = load_classifier_checkpoint
+        self.pooling = pooling
 
         if pretrain_info:
             self.hf_path = pretrain_info.hf_path
@@ -46,8 +49,38 @@ class BirdSetModel(nn.Module):
             self.hf_path = None
             self.hf_name = None
             self.num_classes = num_classes
+        
+        self.model = None
+        self.preprocessor = None
+
+        self.model = self._load_model()
+        if self.preprocess_in_model:
+            self.preprocessor = self._load_preprocessor()
+        
+        if freeze_backbone:
+            self.freeze_model_backbone()
+
+    def _load_preprocessor(self) -> nn.Module:
+        # Implement this method in subclasses to load the preprocessor
+        return None
+
+    def _load_model(self):
+        # Implement this method in subclasses to load the model
+        raise NotImplementedError("Subclasses should implement this method to load the model.")
+    
+    def freeze_model_backbone(self):
+        """
+        Freezes the backbone of the model.
+        """
+        for param in self.model.parameters():
+            param.requires_grad = False
+        log.info(">> Backbone of the model is frozen.")
 
     def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+        if self.preprocess_in_model:
+            if self.preprocessor is None:
+                raise ValueError("Preprocessor is not configured properly.")
+            input_values = self.preprocessor(input_values)
         return input_values
     
     def _load_local_checkpoint(self):
