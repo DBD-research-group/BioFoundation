@@ -10,7 +10,7 @@ module:
     weight_decay: 5e-4
   network:
     model:
-      preprocess_in_model: False
+      preprocess_in_model: True
       checkpoint: DBD-research-group/ConvNeXT-Base-BirdSet-XCL
       classifier:
         _target_: biofoundation.modules.models.linear_classifier.LinearClassifier

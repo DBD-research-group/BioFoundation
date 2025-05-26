@@ -2,18 +2,19 @@ model:
   _target_: biofoundation.modules.models.convnext.ConvNextModule
   num_classes: null
   num_channels: 1
-  checkpoint: facebook/convnext-base-224-22k
+  checkpoint: DBD-research-group/ConvNeXT-Base-BirdSet-XCL
   local_checkpoint: null
-  classifier: null
-  preprocess_in_model: False
   cache_dir: ${paths.dataset_path}/models/
+  preprocess_in_model: True
+  classifier: nul
   pretrain_info:
     hf_path: ${datamodule.dataset.hf_path}
     hf_name: ${datamodule.dataset.hf_name}
     hf_pretrain_name: null
     valid_test_only: False
+  
 
-model_name: convnext
+model_name: convnext_bs
 model_type: vision
 torch_compile: False
 sample_rate: 32_000

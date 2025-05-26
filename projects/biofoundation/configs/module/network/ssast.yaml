@@ -11,7 +11,7 @@ model:
 model_name: ssast
 model_type: waveform # Spectrogram creation is done in the model itself
 torch_compile: False
-sampling_rate: 16_000
+sample_rate: 16_000
 normalize_spectrogram: False
 normalize_waveform: False
 embedding_size: 768
