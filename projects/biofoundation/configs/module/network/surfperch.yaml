@@ -1,0 +1,10 @@
+model: 
+  _target_: biofoundation.modules.models.surfperch.SurfPerch
+  num_classes: null
+
+model_name: surfperch
+model_type: waveform
+torch_compile: False
+sampling_rate: 32_000
+normalize_spectrogram: False
+normalize_waveform: "instance_peak_normalization" # Test different values
