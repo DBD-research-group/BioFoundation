@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from torchaudio.compliance import kaldi
 import torchaudio.transforms as T
-
+from biofoundation.modules.models.inat_utils import AudioToImageConverter
 
 class ViTModel(BirdSetModel):
     """
@@ -61,6 +61,21 @@ class ViTModel(BirdSetModel):
             stype="power",
         )
 
+        self.converter = AudioToImageConverter(
+                        freq_scale='mel',
+                        samplerate=22050,
+                        fft_length=1024,
+                        window_length_samples=256,
+                        hop_length_samples=32,
+                        mel_bands=128,
+                        mel_min_hz=50,
+                        mel_max_hz=8000,
+                        max_db_value=0.,
+                        min_db_value=-80.,
+                        target_height=224,
+                        target_width=224,
+)
+
     def load_model(self) -> None:
         self.model = models.vit_b_16(weights=None)
 
@@ -87,8 +102,25 @@ class ViTModel(BirdSetModel):
             torch.Tensor: The output of the classifier.
         """
         # input_values = self.duplicate_channels(input_values)
-        spectograms = self.preprocess3(input_values)
+        spectograms = self.preprocess4(input_values)
         return self.model(spectograms)
+
+    def preprocess4(self, input_values):
+        input_values = input_values.detach().cpu().numpy()
+        spec = self.converter._samples_to_magnitude_spectrogram(input_values)
+
+        if self.converter.freq_scale == 'mel':
+            spec = self.converter._mel_scale(spec)
+
+        spec = self.converter._magnitude_to_db(spec)
+        spec = self.converter._db_to_uint8(spec)
+        spec = self.converter._orientate(spec)
+        spec, _, _ = self.converter._resize(spec)
+
+        spec_tensor = torch.tensor(spec, dtype=torch.float32, device="cuda")
+
+        return spec_tensor
+
 
     def preprocess3(self, input_values: torch.Tensor) -> torch.Tensor:
         mel_db = self.mel_spectrogram(input_values)
