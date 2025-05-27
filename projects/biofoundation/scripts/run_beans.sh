@@ -56,6 +56,8 @@ tags=("${tags[@]:-${default_tags[@]}}")
 # Validate required argument
 if [ -z "$config_path" ]; then
   echo "Error: --config is required"
+  echo "Usage: $0 --config <path> [--models <model1,model2,...>] [--seeds <seed1,seed2,...>] [--datasets <dataset1,dataset2,...>] [--tags <tag1,tag2,...>] [--gpu <gpu_id>] [--timeout <timeout_in_minutes>] [--extras <extra_args>]"
+  echo "Example: ./projects/biofoundation/scripts/run_beans.sh --config beans/linearprobing --models convnext_bs --datasets beans_watkins,beans_cbi --gpu 1"
   exit 1
 fi
 

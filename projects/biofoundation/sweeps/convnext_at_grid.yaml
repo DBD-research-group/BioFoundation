@@ -8,11 +8,11 @@ metric:
   goal: maximize
 parameters:
   experiment:
-    values: [birdset/linearprobing/sweeps/convnext_bs] # The hydra experiment
+    values: [birdset/attentive/sweeps/convnext_bs] # The hydra experiment
   datamodule.loaders.train.batch_size:
-    values: [128] 
+    values: [64] 
   module.optimizer.lr:
-    values: [0.0001, 0.0005, 0.005, 0.001, 0.01]  # Grid of learning rates
+    values: [0.0001, 0.0005, 0.005, 0.001]  # Grid of learning rates
 
 #early_terminate:
 #  type: hyperband

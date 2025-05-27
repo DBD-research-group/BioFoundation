@@ -23,7 +23,7 @@ logger:
  
 module:
   optimizer:
-    lr: 1e-2
+    lr: 5e-3
     weight_decay: 5e-4
   loss:
   #  _target_: birdset.modules.losses.asymmetric_loss.AsymmetricLossMultiLabel
@@ -41,7 +41,7 @@ module:
  
 trainer:
   min_epochs: 1
-  max_epochs: 50
+  max_epochs: 15
   devices: [1]
  
 datamodule:
@@ -60,19 +60,19 @@ datamodule:
  
   loaders:
     train:
-      batch_size: 32
+      batch_size: 128
       shuffle: True
       num_workers: 16
       drop_last: True
       prefetch_factor: 2
  
     valid:
-      batch_size: 32
+      batch_size: 64
       num_workers: 16
       shuffle: False
    
     test:
-      batch_size: 16
+      batch_size: 32
       num_workers: 16
       shuffle: False
  
@@ -88,7 +88,7 @@ callbacks:
   early_stopping:
     _target_: lightning.pytorch.callbacks.EarlyStopping
     monitor: "val/BCEWithLogitsLoss_epoch"
-    patience: 5
+    patience: 3
     mode: 'min'
     min_delta: 1e-3
     verbose: False

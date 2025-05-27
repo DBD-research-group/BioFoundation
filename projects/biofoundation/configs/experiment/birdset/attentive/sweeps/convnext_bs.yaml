@@ -1,11 +1,10 @@
 # @package _global_
 #package global is neccessary!
 defaults:
-  - birdset/linearprobing/linearprobing_config.yaml 
-  - override /module/network: convnext_bs.yaml
+  - birdset/attentive/attentive_config.yaml 
+  - override /module/network: convnext.yaml
 
-tags: ["biofoundation", "BEANS", "augmentations", "linearprobing", "${module.network.model_name}"]
-
+tags: 
 trainer:
   min_epochs: 1
   max_epochs: 20
@@ -15,6 +14,16 @@ module:
   optimizer:
     lr: 0.005
     weight_decay: 5e-4
+  network:
+    model:
+      preprocess_in_model: False
+      checkpoint: DBD-research-group/ConvNeXT-Base-BirdSet-XCL
+      pooling: attentive
+      classifier:
+        _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
+        num_classes: ${module.network.model.num_classes}
+        in_features: ${module.network.embedding_size}
+    model_name: convnext_bs
   
 datamodule:
   dataset:
