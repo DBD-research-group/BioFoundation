@@ -1,18 +1,18 @@
 from typing import Optional, Literal
-from biofoundation.modules.models.AttentivePooling import AttentivePooling
+from biofoundation.modules.models.vit import ViT
+
 import torch
 from torch import nn
 
 
 from biofoundation.modules.models.BEATs import BEATs, BEATsConfig
-from biofoundation.modules.models.birdset_model import BirdSetModel
 
 from birdset.utils import pylogger
 
 log = pylogger.get_pylogger(__name__)
 
 
-class BEATsModel(BirdSetModel):
+class BEATsModel(ViT):
     """
     Pretrained model for audio classification using the BEATs model.
     Expects a 1-channel 10s waveform input, all preprocessing is done in the network.
@@ -31,25 +31,22 @@ class BEATsModel(BirdSetModel):
         preprocess_in_model: bool = True,
         classifier: nn.Module | None = None,
         pretrain_info = None,
-        pooling: Literal['just_cls', 'attentive'] = "just_cls",
+        pooling: Literal['just_cls', 'attentive', 'attentive_old', 'average', 'mean'] = "just_cls",
     ) -> None:
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
+            classifier=classifier,
             local_checkpoint=local_checkpoint,
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
             pretrain_info=pretrain_info,
+            pooling=pooling,
         )
         self.model = None  # Placeholder for the loaded model
         self.checkpoint_path = checkpoint_path
-        self.pooling = pooling
-        if pooling == "attentive":
-            attentive_heads = embedding_size // 8 # beats uses 8 heads
-            self.attentive_pooling = AttentivePooling(
-                embed_dim=embedding_size, num_heads=attentive_heads
-            )
+    
         self.load_model()
         if classifier is None:
             self.classifier = nn.Linear(embedding_size, num_classes)
@@ -97,13 +94,13 @@ class BEATsModel(BirdSetModel):
         Returns:
             torch.Tensor: The output of the classifier.
         """
-        embeddings = self.get_embeddings(input_values, self.pooling)
+        embeddings = self.get_embeddings(input_values, self.pooling_type)
         # flattend_embeddings = embeddings.reshape(embeddings.size(0), -1)
         if self.model.predictor is not None:
             return embeddings
         return self.classifier(embeddings)
 
-    def get_embeddings(self, input_values: torch.Tensor, pooling) -> torch.Tensor:
+    def get_embeddings(self, input_values: torch.Tensor, pooling_type) -> torch.Tensor:
         """
         Get the embeddings and logits from the BEATs model.
 
@@ -115,12 +112,16 @@ class BEATsModel(BirdSetModel):
         """
         if self.preprocess_in_model:
             input_values = self._preprocess(input_values)
-        embeddings = self.model.extract_features(input_values)[0]
-        if pooling == "just_cls" and self.model.predictor is None: # It returns Probabilities otherwise
-            # Use only the CLS token for classification
-            # The CLS token is the first token in the sequence
-            return embeddings[:, 0, :]
-        elif pooling == "attentive":
-            return self.attentive_pooling(embeddings)
+        embeddings = self.model.extract_features(input_values)[
+            0
+        ]  # outputs a tensor of size 496x768
+        return self.pool(embeddings, pooling_type)
 
-        return embeddings
+    def get_num_layers(self) -> int:
+        """
+        Get the number of layers in the model.
+
+        Returns:
+            int: The number of layers in the model.
+        """
+        return len(self.model.encoder.layers)

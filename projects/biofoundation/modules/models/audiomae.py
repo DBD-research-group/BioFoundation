@@ -1,14 +1,15 @@
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple
+from biofoundation.modules.models.vit import ViT
 import timm
 import torch
 from torch import nn
 import torch.nn.functional as F
 from torchaudio.compliance import kaldi
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from birdset.configs.model_configs import PretrainInfoConfig
 
 
-class AudioMAEModel(BirdSetModel):
+class AudioMAEModel(ViT):
     """
     Pretrained model for audio classification using the AUDIOMAE model.
     Masked Autoencoders that Listen: https://arxiv.org/abs/2207.06405
@@ -32,6 +33,8 @@ class AudioMAEModel(BirdSetModel):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
         classifier: nn.Module = None,
+        pretrain_info: PretrainInfoConfig = None,
+        pooling: Literal['just_cls', 'attentive', 'attentive_old', 'average', 'mean'] = "just_cls",
     ) -> None:
         super().__init__(
             num_classes=num_classes,
@@ -40,6 +43,8 @@ class AudioMAEModel(BirdSetModel):
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
+            pretrain_info=pretrain_info,
+            pooling=pooling,
         )
         self.model = None  # Placeholder for the loaded model
         self.checkpoint_path = checkpoint_path
@@ -109,7 +114,7 @@ class AudioMAEModel(BirdSetModel):
             return embeddings 
         return self.classifier(embeddings)
 
-    def get_embeddings(self, input_tensor: torch.Tensor) -> torch.Tensor:
+    def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
         """
         Get the embeddings and logits from the AUDIOMAE model.
 
@@ -124,3 +129,13 @@ class AudioMAEModel(BirdSetModel):
         embeddings = self.model(input_values)
         #! We can also get frame level embeddings for attentive probing and to fix problems check HF
         return embeddings
+
+
+    def get_num_layers(self) -> int:
+        """
+        Get the number of layers in the model.
+
+        Returns:
+            int: The number of layers in the model.
+        """
+        return len(self.model.encoder.layers)

@@ -1,3 +1,4 @@
+from biofoundation.modules.optimizer.lr_decay import param_groups_lrd
 import torch
 import math
 import lightning as L
@@ -90,6 +91,14 @@ class BaseModule(L.LightningModule):
         self.loss = loss
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
+        optimizer_keywords = getattr(self.optimizer, "keywords", {})
+        extras = optimizer_keywords.get('extras')
+        if extras and "layer_decay" in extras:
+            self.layer_decay = extras.layer_decay
+            self.decay_type = extras.decay_type
+            self.no_weight_decay_list = extras.no_weight_decay_list
+        else:
+            self.layer_decay = None
         self.warmup_ratio = 0.05
         self.metrics = metrics
         self.logging_params = logging_params
@@ -115,6 +124,11 @@ class BaseModule(L.LightningModule):
         self.test_add_metrics = self.metrics.add_metrics.clone(prefix="test/")
         # configure eval_complete metrics
         self.test_complete_metrics = self.metrics.eval_complete.clone(prefix="test/")
+
+        # configure additional val metrics when using multiple dataloaders
+        self.valid2_metric = self.metrics.main_metric.clone()
+        self.valid2_add_metrics = self.metrics.add_metrics.clone(prefix="val/")
+        self.valid2_metric_best = self.metrics.val_metric_best.clone() 
 
         self.torch_compile = network.torch_compile
         self.model_name = network.model_name
@@ -145,7 +159,29 @@ class BaseModule(L.LightningModule):
         return self.model.forward(*args, **kwargs)
 
     def configure_optimizers(self):
-        self.optimizer = self.optimizer(self.model.parameters())
+        if self.layer_decay is not None:
+            params = param_groups_lrd(
+                model=self.model,
+                weight_decay=self.optimizer.keywords["weight_decay"],
+                no_weight_decay_list=self.no_weight_decay_list,
+                layer_decay=self.layer_decay
+            )
+            # scale learning rate for layer decay
+            for param_group in params:
+                param_group["lr"] = (
+                    self.optimizer.keywords["lr"]
+                    * param_group["lr_scale"])
+                
+        else:
+            params = self.model.parameters()
+        
+        # filter out parameters that are not trainable
+        params = filter(lambda p: p.requires_grad, params)
+        
+        # strip extras from optimizer.keywords
+        self.optimizer.keywords.pop("extras", None)
+        
+        self.optimizer = self.optimizer(params)
         if self.lr_scheduler is not None:
             # TODO: Handle the case when we do not want warmup
             num_training_steps = math.ceil(
@@ -209,7 +245,7 @@ class BaseModule(L.LightningModule):
         # self.log_dict(self.train_add_metrics, **self.logging_params)
 
         return {"loss": train_loss}
-
+    
     def validation_step(self, batch, batch_idx):
         val_loss, preds, targets = self.model_step(batch, batch_idx)
         self.log(
@@ -240,6 +276,49 @@ class BaseModule(L.LightningModule):
     #         f"val/{self.valid_metric.__class__.__name__}_best",
     #         self.valid_metric_best.compute(),
     #     )
+
+    def validation_step(self, batch, batch_idx, dataloader_idx = 0):
+        val_loss, preds, targets = self.model_step(batch, batch_idx)
+        if dataloader_idx == 0:
+            self.log(
+                f"val/{self.loss.__class__.__name__}",
+                val_loss,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+            )
+
+            #! Comment out for performance increase
+            self.valid_metric(preds, targets.int())
+            self.log(
+                f"val/{self.valid_metric.__class__.__name__}",
+                self.valid_metric,
+                **asdict(self.logging_params),
+            )
+        elif dataloader_idx == 1:
+            self.log(
+                f"val/{self.loss.__class__.__name__}",
+                val_loss,
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+            )
+
+            #! Comment out for performance increase
+            self.valid2_metric(preds, targets.int())
+            self.log(
+                f"val/{self.valid2_metric.__class__.__name__}",
+                self.valid2_metric,
+                **asdict(self.logging_params),
+            )
+            if self.task == "multiclass":
+                self.valid2_add_metrics(preds, targets)
+            else:
+                self.valid2_add_metrics(preds, targets.int())
+            self.log_dict(self.valid2_add_metrics, **asdict(self.logging_params))
+        
+        return {"loss": val_loss, "preds": preds, "targets": targets}
+
 
     def test_step(self, batch, batch_idx):
         test_loss, preds, targets = self.model_step(batch, batch_idx)
