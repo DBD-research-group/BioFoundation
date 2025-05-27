@@ -91,7 +91,7 @@ class BEANSDataModule(BaseDataModuleHF):
         dataset = dataset.cast_column(
             column="audio",
             feature=Audio(
-                sample_rate=self.dataset_config.sample_rate,
+                sampling_rate=self.dataset_config.sample_rate,
                 mono=True,
                 decode=decode,
             ),
