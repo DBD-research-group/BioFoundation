@@ -87,9 +87,9 @@ callbacks:
     every_n_train_steps: null
   early_stopping:
     _target_: lightning.pytorch.callbacks.EarlyStopping
-    monitor: "val/MulticlassAccuracy"
-    patience: 15
-    mode: 'max'
-    min_delta: 1e-3 
+    monitor: "val/CrossEntropyLoss_epoch"
+    patience: 5
+    mode: 'min'
+    min_delta: 1e-4
     verbose: False
     check_finite: True
