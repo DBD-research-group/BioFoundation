@@ -1,5 +1,6 @@
 from typing import Dict, Literal, Optional
 
+from biofoundation.modules.models.Pooling import AttentivePooling
 import torch
 from torch import nn
 import torchaudio
@@ -23,7 +24,7 @@ class ConvNextModule(BirdSetModel):
     ConvNext model for audio classification.
     """
 
-    EMBEDDING_SIZE = 768
+    EMBEDDING_SIZE = 1024
 
     def __init__(
         self,
@@ -69,6 +70,10 @@ class ConvNextModule(BirdSetModel):
 
         if self.pooling == "default":
             self.pooler =  nn.LayerNorm(self.config.hidden_sizes[-1], eps=self.config.layer_norm_eps)
+        elif self.pooling == "attentive":
+            self.pooler = AttentivePooling(
+                dim=embedding_size, num_heads=8
+            )
        
 
         if local_checkpoint:
@@ -126,7 +131,12 @@ class ConvNextModule(BirdSetModel):
 
     def get_embeddings(self, input_tensor) -> torch.Tensor:
         output = self.model(input_tensor, output_hidden_states=True, return_dict=True)
-        embeddings = self.pooler(output.hidden_states[-1].mean([-2, -1]))
+        if self.pooling == "default":
+            embeddings = self.pooler(output.hidden_states[-1].mean([-2, -1]))
+        elif self.pooling == "attentive":
+            # transform (B, N, H, W) to (B, N, C)
+            x = output.hidden_states[-1].flatten(2).transpose(1, 2)
+            embeddings = self.pooler(x)
         return embeddings
 
     def forward(
