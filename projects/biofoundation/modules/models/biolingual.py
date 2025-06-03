@@ -88,7 +88,7 @@ class BioLingualClassifier(BirdSetModel):
             return self.processor(
                 audios=input_values.cpu().numpy(),
                 return_tensors="pt",
-                sampling_rate=48000,
+                sample_rate=48000,
             ).input_features.to(input_values.device)
         else:
             return input_values

@@ -27,7 +27,6 @@ class AttentivePooling(nn.Module):
         # )
  
     def forward(self, x: Tensor) -> Tensor:
-        x = x[:, 1:, :]  # exclude the ViT CLS token (could also be done in code later if neccessary)
         B, N, C = x.shape
         #x = self.bn(x.transpose(-2, -1)).transpose(-2, -1) #done with fc_norm later
         cls_token = self.cls_token.expand(B, -1, -1)

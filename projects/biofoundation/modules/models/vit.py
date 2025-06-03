@@ -50,8 +50,10 @@ class ViT(BirdSetModel):
             # The CLS token is the first token in the sequence
             return embeddings[:, 0, :]
         elif pooling == "attentive":
+            embeddings = embeddings[:, 1:, :]
             return self.attentive_pooling(embeddings)
         elif pooling == "attentive_old":
+            embeddings = embeddings[:, 1:, :]
             return self.attentive_pooling(embeddings)
         elif pooling == "average":
             return self.average_pooling(embeddings)

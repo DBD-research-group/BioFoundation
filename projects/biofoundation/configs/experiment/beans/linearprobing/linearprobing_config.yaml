@@ -43,7 +43,7 @@ module:
  
 trainer:
   min_epochs: 1
-  max_epochs: 100
+  max_epochs: 50
   devices: [3]
  
 datamodule:
@@ -87,9 +87,9 @@ callbacks:
     every_n_train_steps: null
   early_stopping:
     _target_: lightning.pytorch.callbacks.EarlyStopping
-    monitor: "val/CrossEntropyLoss_epoch"
+    monitor: "val/MulticlassAccuracy"
     patience: 5
-    mode: 'min'
-    min_delta: 1e-4
+    mode: 'max'
+    min_delta: 1e-3 
     verbose: False
     check_finite: True

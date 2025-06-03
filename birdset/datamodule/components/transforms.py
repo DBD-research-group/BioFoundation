@@ -484,7 +484,7 @@ class EmbeddingTransforms(BirdSetTransformsWrapper):
     def __init__(
         self,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         model_type: Literal["vision", "waveform"] = "waveform",
         spectrogram_augmentations: DictConfig = DictConfig(
             {}
@@ -500,7 +500,7 @@ class EmbeddingTransforms(BirdSetTransformsWrapper):
     ) -> None:
         super().__init__(
             task,
-            sampling_rate,
+            sample_rate,
             model_type,
             spectrogram_augmentations,
             waveform_augmentations,

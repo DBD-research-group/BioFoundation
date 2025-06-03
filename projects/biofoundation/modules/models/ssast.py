@@ -376,14 +376,14 @@ class ASTModel(BirdSetModel):
         return f_dim, t_dim
 
     def preprocess(
-        self, input_values: torch.Tensor, input_tdim=500, sampling_rate=16000
+        self, input_values: torch.Tensor, input_tdim=500, sample_rate=16000
     ) -> torch.Tensor:
         """
         Preprocesses the input values by applying mel-filterbank transformation. Same as for AudioMae and ConvNeXt.
         Args:
             input_values (torch.Tensor): Input tensor of shape (batch_size, num_samples).
             input_tdim (int): The number of frames to keep. Defaults to 500.
-            sampling_rate (int): The sampling rate of the input tensor. Defaults to 16000.
+            sample_rate (int): The sampling rate of the input tensor. Defaults to 16000.
         Returns:
             torch.Tensor: Preprocessed tensor of shape (batch_size, 1, num_mel_bins, num_frames).
         """
@@ -396,7 +396,7 @@ class ASTModel(BirdSetModel):
                 window_type="hanning",
                 num_mel_bins=128,
                 use_energy=False,
-                sample_frequency=sampling_rate,
+                sample_frequency=sample_rate,
                 frame_shift=10,
             )  # shape (n_frames, 128)
             if melspec.shape[0] < input_tdim:

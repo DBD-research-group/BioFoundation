@@ -17,7 +17,7 @@ class BiolingualTransforms(BirdSetTransformsWrapper):
     def __init__(
         self,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         model_type: Literal["vision", "waveform"] = "vision",
         spectrogram_augmentations: DictConfig = DictConfig(
             {}
@@ -31,7 +31,7 @@ class BiolingualTransforms(BirdSetTransformsWrapper):
         nocall_sampler: NoCallMixer | None = None,
         preprocessing: PreprocessingConfig | None = PreprocessingConfig(),
     ):
-        super().__init__(task, sampling_rate, model_type, spectrogram_augmentations, waveform_augmentations, decoding, feature_extractor, max_length, nocall_sampler, preprocessing)
+        super().__init__(task, sample_rate, model_type, spectrogram_augmentations, waveform_augmentations, decoding, feature_extractor, max_length, nocall_sampler, preprocessing)
 
     def transform_values(self, batch):
         input_values, labels = super().transform_values(batch)
@@ -39,6 +39,6 @@ class BiolingualTransforms(BirdSetTransformsWrapper):
         input_values = self.processor(
                 audios=input_values.cpu().numpy(),
                 return_tensors="pt",
-                sampling_rate=48000,
+                sample_rate=48000,
             ).input_features
         return input_values, labels

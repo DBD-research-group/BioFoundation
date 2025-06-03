@@ -1,5 +1,5 @@
 model:
-  _target_: biofoundation.modules.models.convnext.ConvNextClassifier
+  _target_: biofoundation.modules.models.convnext.ConvNextModule
   num_classes: null
   num_channels: 1
   checkpoint: facebook/convnext-base-224-22k
@@ -16,7 +16,7 @@ model:
 model_name: convnext
 model_type: vision
 torch_compile: False
-sampling_rate: 32_000
+sample_rate: 32_000
 normalize_waveform: null
 normalize_spectrogram: True
 embedding_size: 1024

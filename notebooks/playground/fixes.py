@@ -13,7 +13,7 @@ dm = BirdSetDataModule(
         task="multilabel",
         classlimit=500,
         eventlimit=5,
-        sampling_rate=32_000,
+        sample_rate=32_000,
     ),
 )
 
@@ -30,7 +30,7 @@ dm = ESC50DataModule(
         val_split=0.2,
         task="multiclass",
         subset=None,
-        sampling_rate=44100,
+        sample_rate=44100,
     ),
 )
 # %%

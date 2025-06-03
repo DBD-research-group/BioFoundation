@@ -1,0 +1,44 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - birdset/attentive/attentive_config.yaml 
+  - override /module/network: convnext.yaml
+
+tags: 
+trainer:
+  min_epochs: 1
+  max_epochs: 20
+  devices: [0]
+
+module:
+  optimizer:
+    lr: 0.005
+    weight_decay: 5e-4
+  network:
+    model:
+      preprocess_in_model: False
+      checkpoint: DBD-research-group/ConvNeXT-Base-BirdSet-XCL
+      pooling: attentive
+      classifier:
+        _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
+        num_classes: ${module.network.model.num_classes}
+        in_features: ${module.network.embedding_size}
+    model_name: convnext_bs
+  
+datamodule:
+  dataset:
+    hf_name: 'POW'
+    dataset_name: 'POW'
+    use_test_as_valid: True
+  
+  loaders:
+    train:
+      batch_size: 128
+
+
+callbacks:
+  model_checkpoint:
+    monitor: "val/BCEWithLogitsLoss/dataloader_idx_0" 
+    save_top_k: 1
+    every_n_train_steps: null
+  early_stopping: null
