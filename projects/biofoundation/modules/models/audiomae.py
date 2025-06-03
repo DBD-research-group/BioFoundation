@@ -27,7 +27,6 @@ class AudioMAEModel(ViT):
         num_classes: int,
         embedding_size: int = EMBEDDING_SIZE,
         checkpoint_path: str = "hf_hub:gaunernst/vit_base_patch16_1024_128.audiomae_as2m",
-        use_classifier: bool = True,
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
@@ -36,6 +35,8 @@ class AudioMAEModel(ViT):
         pretrain_info: PretrainInfoConfig = None,
         pooling: Literal['just_cls', 'attentive', 'attentive_old', 'average', 'mean'] = "just_cls",
     ) -> None:
+        self.model = None  # Placeholder for the loaded model
+        self.checkpoint_path = checkpoint_path
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
@@ -46,19 +47,6 @@ class AudioMAEModel(ViT):
             pretrain_info=pretrain_info,
             pooling=pooling,
         )
-        self.model = None  # Placeholder for the loaded model
-        self.checkpoint_path = checkpoint_path
-        self.use_classifier = use_classifier
-        self.load_model()
-        self.num_classes = num_classes
-
-        if classifier is None:
-
-            self.classifier = nn.Linear(
-                in_features=self.EMBEDDING_SIZE, out_features=num_classes
-            )
-        else:
-            self.classifier = classifier
         
         if local_checkpoint:
             self._load_local_checkpoint()
@@ -67,17 +55,15 @@ class AudioMAEModel(ViT):
             for param in self.model.parameters():
                 param.requires_grad = False
 
-    def load_model(self) -> None:
+    def _load_model(self) -> None:
         """
         Load the model from Huggingface.
         """
-        self.model = timm.create_model(
+        return  timm.create_model(
             self.checkpoint_path, pretrained=True
         )
 
-        self.model.eval()
-
-    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+    def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
 
         device = input_values.device
         melspecs = []
@@ -94,7 +80,7 @@ class AudioMAEModel(ViT):
         melspecs = melspecs.unsqueeze(1)  # shape (batch_size, 1, 128, 1024)
         melspecs = (melspecs - self.MEAN) / (self.STD * 2)
         return melspecs
-
+    
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
@@ -108,11 +94,17 @@ class AudioMAEModel(ViT):
         Returns:
             torch.Tensor: The output of the classifier.
         """
+        if self.preprocess_in_model:
+            input_values = self._preprocess(input_values)
+        if self.classifier is not None:
+            embeddings = self.get_embeddings(input_values)
+            logits = self.classifier(embeddings)
+        else:
+            logits = self.model(input_values)
 
-        embeddings = self.get_embeddings(input_values)
-        if not self.use_classifier:
-            return embeddings 
-        return self.classifier(embeddings)
+        return logits
+
+
 
     def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
         """
@@ -125,7 +117,7 @@ class AudioMAEModel(ViT):
             torch.Tensor: The embeddings from the model.
         """
         if self.preprocess_in_model:
-            input_values = self.preprocess(input_tensor)
+            input_values = self.preprocess(input_values)
         embeddings = self.model(input_values)
         #! We can also get frame level embeddings for attentive probing and to fix problems check HF
         return embeddings

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 import datasets
 from torch import nn
 import torch
@@ -64,7 +64,7 @@ class BirdSetModel(nn.Module):
         # Implement this method in subclasses to load the preprocessor
         return None
 
-    def _load_model(self):
+    def _load_model(self) -> nn.Module:
         # Implement this method in subclasses to load the model
         raise NotImplementedError("Subclasses should implement this method to load the model.")
     
@@ -82,6 +82,30 @@ class BirdSetModel(nn.Module):
                 raise ValueError("Preprocessor is not configured properly.")
             input_values = self.preprocessor(input_values)
         return input_values
+    
+    def forward(
+        self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
+        """
+        Forward pass through the model.
+
+        Args:
+            input_values (torch.Tensor): The input tensor for the classifier.
+            labels (Optional[torch.Tensor]): The true labels for the input values. Default is None.
+
+        Returns:
+            torch.Tensor: The output of the classifier.
+        """
+        if self.preprocess_in_model:
+            input_values = self._preprocess(input_values)
+        if self.classifier is not None:
+            embeddings = self.get_embeddings(input_values)
+            logits = self.classifier(embeddings)
+        else:
+            output = self.model(input_values)
+            logits = output.logits
+
+        return logits
     
     def _load_local_checkpoint(self):
         state_dict = torch.load(self.local_checkpoint)["state_dict"]

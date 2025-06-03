@@ -14,4 +14,4 @@ module:
   network:
     model: 
       checkpoint_path: "hf_hub:gaunernst/vit_base_patch16_1024_128.audiomae_as2m_ft_as20k"
-      use_classifier: False  
+      classifier: null
