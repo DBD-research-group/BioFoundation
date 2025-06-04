@@ -4,10 +4,48 @@ import timm
 import torch
 from torch import nn
 import torch.nn.functional as F
+import torchaudio
 from torchaudio.compliance import kaldi
 
 from birdset.configs.model_configs import PretrainInfoConfig
 
+class KaldiLikeMelSpec(nn.Module):
+    MEAN = -4.2677393
+    STD = 4.5689974
+    def __init__(self, target_frames: int = 1024):
+        super().__init__()
+        self.target_frames = target_frames
+        self.preemphasis = torchaudio.functional.preemphasis
+        self.melspec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=16000,
+            n_fft=512,
+            win_length=400,
+            hop_length=160,
+            window_fn=torch.hann_window,
+            n_mels=128,
+            f_min=20.0,
+            f_max=8000.0,
+            power=2.0,  # Kaldi default is power
+            norm=None,
+            mel_scale="htk",
+        )
+        # Use log-mel, not dB, for exact Kaldi parity
+    def forward(self, x):
+        # Remove DC offset
+        x = x - x.mean(dim=-1, keepdim=True)
+        # Pre-emphasis
+        x = torchaudio.functional.preemphasis(x, coeff=0.97)
+        melspecs = self.melspec(x)
+        melspecs = torch.log(melspecs + 1e-6)
+        n_frames = melspecs.shape[-1]
+        if n_frames < self.target_frames:
+            pad_amt = self.target_frames - n_frames
+            melspecs = F.pad(melspecs, (0, pad_amt), mode='constant', value=0)
+        else:
+            melspec = melspec[..., :self.target_frames]
+        melspecs = melspecs.permute(0, 1, 3, 2)  # (batch, 1, 128, 1024)
+        melspecs = (melspecs - self.MEAN) / (self.STD * 2)
+        return melspecs
 
 class AudioMAEModel(ViT):
     """
@@ -46,8 +84,11 @@ class AudioMAEModel(ViT):
             preprocess_in_model=preprocess_in_model,
             pretrain_info=pretrain_info,
             pooling=pooling,
+            classifier=classifier,
         )
         
+        self.preprocessor = KaldiLikeMelSpec()
+
         if local_checkpoint:
             self._load_local_checkpoint()
 
@@ -63,23 +104,12 @@ class AudioMAEModel(ViT):
             self.checkpoint_path, pretrained=True
         )
 
-    def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
-
-        device = input_values.device
-        melspecs = []
-        for waveform in input_values:
-            melspec = kaldi.fbank(
-                waveform, htk_compat=True, window_type="hanning", num_mel_bins=128
-            )  # shape (n_frames, 128)
-            if melspec.shape[0] < 1024:
-                melspec = F.pad(melspec, (0, 0, 0, 1024 - melspec.shape[0]))
-            else:
-                melspec = melspec[:1024]
-            melspecs.append(melspec)
-        melspecs = torch.stack(melspecs).to(device)
-        melspecs = melspecs.unsqueeze(1)  # shape (batch_size, 1, 128, 1024)
-        melspecs = (melspecs - self.MEAN) / (self.STD * 2)
-        return melspecs
+    def _load_preprocessor(self) -> nn.Module:
+        """
+        Load the preprocessor for the model.
+        This is a Kaldi-like Mel spectrogram extractor.
+        """
+        return KaldiLikeMelSpec()
     
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None

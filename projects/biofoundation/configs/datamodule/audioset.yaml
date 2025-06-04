@@ -19,6 +19,6 @@ dataset:
   sample_rate: ${module.network.sample_rate}
   class_weights_loss: null
   class_weights_sampler: null
-  classlimit: 500
-  eventlimit: 5
+  classlimit: null
+  eventlimit: null
   use_test_as_valid: False  
