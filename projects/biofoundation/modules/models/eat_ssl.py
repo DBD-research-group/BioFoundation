@@ -5,10 +5,10 @@ import torch.nn.functional as F
 from torchaudio.compliance import kaldi
 
 from biofoundation.modules.models.EAT.data2vecmultimodel import Data2VecMultiModel
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 
 
-class EATSSL(BirdSetModel):
+class EATSSL(BioFoundationModel):
     """
     Pretrained model for audio classification using the Efficient Audio Transformer (EAT) model.
 

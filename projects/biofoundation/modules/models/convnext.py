@@ -13,13 +13,13 @@ from transformers import AutoConfig, ConvNextForImageClassification
 
 from torchvision import transforms
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 from birdset.modules.models.convnext import ConvNextClassifier
 
 from birdset.datamodule.components.augmentations import PowerToDB
 
 
-class ConvNextModule(BirdSetModel):
+class ConvNextModule(BioFoundationModel):
     """
     ConvNext model for audio classification.
     """

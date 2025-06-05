@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 
 log = pylogger.get_pylogger(__name__)
 
@@ -321,7 +321,7 @@ class SoundNet(nn.Module):
         return embeddings
 
 
-class EAT(BirdSetModel):
+class EAT(BioFoundationModel):
     EMBEDDING_SIZE = 128
 
     def __init__(

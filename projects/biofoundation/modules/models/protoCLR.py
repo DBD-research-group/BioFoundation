@@ -5,13 +5,13 @@ from torch import nn
 import torch.nn.functional as F
 
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 
 from birdset.configs.model_configs import PretrainInfoConfig
 
 from biofoundation.modules.models.ProtoCLR.melspectrogram import MelSpectrogramProcessor
 
-class ProtoCLRModel(BirdSetModel):
+class ProtoCLRModel(BioFoundationModel):
     """
     Pretrained model for bird classification using Domain-Invariant Representation Learning of Bird Sounds
 

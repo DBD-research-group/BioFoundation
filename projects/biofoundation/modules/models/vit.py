@@ -1,13 +1,13 @@
 from typing import Literal
 from biofoundation.modules.models.Pooling import AttentivePooling, AttentivePooling_old, AveragePooling
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 import torch
 from torch import nn
 
 from birdset.configs.model_configs import PretrainInfoConfig
 
 
-class ViT(BirdSetModel):
+class ViT(BioFoundationModel):
     def __init__(
         self,
         num_classes: int | None,

@@ -6,10 +6,10 @@ from typing import Tuple
 from birdset.configs import PretrainInfoConfig
 from typing import Optional
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 
 
-class BioLingualClassifier(BirdSetModel):
+class BioLingualClassifier(BioFoundationModel):
     """
     Pretrained model for audio classification using the Biolingual model.
 

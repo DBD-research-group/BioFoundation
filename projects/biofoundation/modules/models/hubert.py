@@ -6,10 +6,10 @@ from transformers import (
 )
 
 from birdset.configs import PretrainInfoConfig
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 
 
-class HubertSequenceClassifier(BirdSetModel):
+class HubertSequenceClassifier(BioFoundationModel):
 
     EMBEDDING_SIZE = 768
 

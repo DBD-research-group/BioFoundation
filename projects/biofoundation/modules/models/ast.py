@@ -4,12 +4,12 @@ from transformers import ASTConfig, ASTForAudioClassification
 from birdset.utils import pylogger
 from birdset.configs import PretrainInfoConfig
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 
 log = pylogger.get_pylogger(__name__)
 
 
-class ASTSequenceClassifier(BirdSetModel):
+class ASTSequenceClassifier(BioFoundationModel):
     EMBEDDING_SIZE = 768
 
     def __init__(

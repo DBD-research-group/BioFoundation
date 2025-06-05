@@ -7,7 +7,7 @@ from birdset.utils import pylogger
 log = pylogger.get_pylogger(__name__)
 
 
-class BirdSetModel(nn.Module):
+class BioFoundationModel(nn.Module):
     def __init__(
         self,
         num_classes: int | None,

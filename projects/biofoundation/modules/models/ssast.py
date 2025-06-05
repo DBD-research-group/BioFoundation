@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from typing import Optional
 from birdset.utils import pylogger
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.birdset_model import BioFoundationModel
 
 log = pylogger.get_pylogger(__name__)
 
@@ -41,7 +41,7 @@ class PatchEmbed(nn.Module):
         return x
 
 
-class ASTModel(BirdSetModel):
+class ASTModel(BioFoundationModel):
     EMBEDDING_SIZE = 768
 
     def __init__(
