@@ -93,12 +93,7 @@ class AudioMAEModel(ViT):
 
         self.preprocessor = KaldiLikeMelSpec()
 
-        if local_checkpoint:
-            self._load_local_checkpoint()
 
-        if freeze_backbone:
-            for param in self.model.parameters():
-                param.requires_grad = False
 
     def _load_model(self) -> None:
         """
