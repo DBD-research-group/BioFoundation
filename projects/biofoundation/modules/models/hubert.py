@@ -6,7 +6,7 @@ from transformers import (
 )
 
 from birdset.configs import PretrainInfoConfig
-from biofoundation.modules.models.birdset_model import BioFoundationModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
 class HubertSequenceClassifier(BioFoundationModel):

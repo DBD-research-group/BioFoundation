@@ -4,7 +4,7 @@ from biofoundation.modules.models.Pooling import (
     AttentivePooling_old,
     AveragePooling,
 )
-from biofoundation.modules.models.birdset_model import BioFoundationModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 import torch
 from torch import nn
 

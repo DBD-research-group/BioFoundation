@@ -4,7 +4,7 @@ from transformers import ASTConfig, ASTForAudioClassification
 from birdset.utils import pylogger
 from birdset.configs import PretrainInfoConfig
 
-from biofoundation.modules.models.birdset_model import BioFoundationModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 log = pylogger.get_pylogger(__name__)
 

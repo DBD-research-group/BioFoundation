@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torchaudio.compliance import kaldi
 
 from biofoundation.modules.models.EAT.data2vecmultimodel import Data2VecMultiModel
-from biofoundation.modules.models.birdset_model import BioFoundationModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
 class EATSSL(BioFoundationModel):

@@ -6,7 +6,7 @@ from typing import Tuple
 from birdset.configs import PretrainInfoConfig
 from typing import Optional
 
-from biofoundation.modules.models.birdset_model import BioFoundationModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
 class BioLingualClassifier(BioFoundationModel):

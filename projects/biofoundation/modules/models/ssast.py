@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from typing import Optional
 from birdset.utils import pylogger
 
-from biofoundation.modules.models.birdset_model import BioFoundationModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 log = pylogger.get_pylogger(__name__)
 

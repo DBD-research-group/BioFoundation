@@ -5,7 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 
 
-from biofoundation.modules.models.birdset_model import BioFoundationModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 from birdset.configs.model_configs import PretrainInfoConfig
 
