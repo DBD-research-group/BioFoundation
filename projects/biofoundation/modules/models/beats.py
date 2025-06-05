@@ -19,21 +19,21 @@ class BEATsModel(ViT):
     """
 
     EMBEDDING_SIZE = 768
-    MEAN = torch.tensor(-4.268)
-    STD = torch.tensor(4.569)
 
     def __init__(
         self,
         num_classes: int | None,
         embedding_size: int = EMBEDDING_SIZE,
         local_checkpoint: str = None,
-        checkpoint_path: str = '/workspace/models/beats/BEATs_iter3_plus_AS2M.pt',
+        checkpoint_path: str = "/workspace/models/beats/BEATs_iter3_plus_AS2M.pt",
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
         classifier: nn.Module | None = None,
-        pretrain_info = None,
-        pooling: Literal['just_cls', 'attentive', 'attentive_old', 'average', 'mean'] = "just_cls",
+        pretrain_info=None,
+        pooling: Literal[
+            "just_cls", "attentive", "attentive_old", "average", "mean"
+        ] = "just_cls",
     ) -> None:
         super().__init__(
             num_classes=num_classes,
@@ -48,7 +48,7 @@ class BEATsModel(ViT):
         )
         self.model = None  # Placeholder for the loaded model
         self.checkpoint_path = checkpoint_path
-    
+
         self.load_model()
         if classifier is None:
             self.classifier = nn.Linear(embedding_size, num_classes)
@@ -73,7 +73,7 @@ class BEATsModel(ViT):
         cfg = BEATsConfig(checkpoint["cfg"])
         self.model = BEATs(cfg)
         self.model.load_state_dict(checkpoint["model"])
-        self.model.predictor = None  # remove the predictor head
+        # self.model.predictor = None  # This should happen autom. if correct checkpoint
         self.model.eval()
 
     def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
@@ -98,6 +98,8 @@ class BEATsModel(ViT):
         """
         embeddings = self.get_embeddings(input_values, self.pooling_type)
         # flattend_embeddings = embeddings.reshape(embeddings.size(0), -1)
+        if self.model.predictor is not None:
+            return embeddings
         return self.classifier(embeddings)
 
     def get_embeddings(self, input_values: torch.Tensor, pooling_type) -> torch.Tensor:

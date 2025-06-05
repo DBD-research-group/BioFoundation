@@ -12,7 +12,7 @@ network:
   model_name: ${module.embedding_model.model_name}_finetune # Most values are just taken from embedding model as it is the first part
   model_type: waveform
   torch_compile: ${module.embedding_model.torch_compile}
-  sampling_rate: ${module.embedding_model.sampling_rate}
+  sample_rate: ${module.embedding_model.sample_rate}
   normalize_spectrogram: null
   normalize_waveform: False
 

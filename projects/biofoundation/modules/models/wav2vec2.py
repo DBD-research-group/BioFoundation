@@ -6,12 +6,12 @@ from transformers import AutoModelForAudioClassification, AutoConfig
 from birdset.utils import pylogger
 from birdset.configs import PretrainInfoConfig
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 log = pylogger.get_pylogger(__name__)
 
 
-class Wav2vec2SequenceClassifier(BirdSetModel):
+class Wav2vec2SequenceClassifier(BioFoundationModel):
     EMBEDDING_SIZE = 768
 
     def __init__(
@@ -65,11 +65,14 @@ class Wav2vec2SequenceClassifier(BirdSetModel):
                     try:
                         classifier_state_dict = {
                             key.replace("model.classifier.", ""): weight
-                            for key, weight in state_dict.items() if key.startswith("model.classifier.")
+                            for key, weight in state_dict.items()
+                            if key.startswith("model.classifier.")
                         }
                         self.classifier.load_state_dict(classifier_state_dict)
                     except Exception as e:
-                        log.error(f"Could not load classifier state dict from local checkpoint: {e}")      
+                        log.error(
+                            f"Could not load classifier state dict from local checkpoint: {e}"
+                        )
 
         self.model = AutoModelForAudioClassification.from_pretrained(
             self.checkpoint,

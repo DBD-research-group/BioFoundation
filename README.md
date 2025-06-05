@@ -370,7 +370,7 @@ dm = BirdSetDataModule(
         task="multilabel",
         classlimit=500,
         eventlimit=5,
-        sampling_rate=32000,
+        sample_rate=32000,
     ),
 )
 

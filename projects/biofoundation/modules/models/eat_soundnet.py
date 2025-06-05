@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 log = pylogger.get_pylogger(__name__)
 
@@ -245,15 +245,17 @@ class SoundNet(nn.Module):
                 break
         # TODO: Only do this if classifier varies
         state_dict = {
-            k: v for k, v in state_dict.items() if not k.startswith(prefix+"model.tf.fc")
+            k: v
+            for k, v in state_dict.items()
+            if not k.startswith(prefix + "model.tf.fc")
         }
         state_dict = {
             key: weight
             for key, weight in state_dict.items()
-            if key.startswith(prefix+"model." + model_name + ".")
+            if key.startswith(prefix + "model." + model_name + ".")
         }
         state_dict = {
-            key.replace(prefix+"model." + model_name + ".", ""): weight
+            key.replace(prefix + "model." + model_name + ".", ""): weight
             for key, weight in state_dict.items()
         }
 
@@ -321,7 +323,7 @@ class SoundNet(nn.Module):
         return embeddings
 
 
-class EAT(BirdSetModel):
+class EAT(BioFoundationModel):
     EMBEDDING_SIZE = 128
 
     def __init__(
@@ -372,11 +374,16 @@ class EAT(BirdSetModel):
                     state_dict = torch.load(self.local_checkpoint)["state_dict"]
                     classifier_state_dict = {
                         key.replace("model.classifier.", ""): weight
-                        for key, weight in state_dict.items() if key.startswith("model.classifier.")
+                        for key, weight in state_dict.items()
+                        if key.startswith("model.classifier.")
                     }
-                    self.classifier.load_state_dict(classifier_state_dict, strict=False) # Strict to false in case BirdSet checkpoint is used without classifier weights
+                    self.classifier.load_state_dict(
+                        classifier_state_dict, strict=False
+                    )  # Strict to false in case BirdSet checkpoint is used without classifier weights
                 except Exception as e:
-                    log.error(f"Could not load classifier state dict from local checkpoint: {e}")  
+                    log.error(
+                        f"Could not load classifier state dict from local checkpoint: {e}"
+                    )
 
         if self.freeze_backbone:
             self.classifier = copy.deepcopy(classifier)

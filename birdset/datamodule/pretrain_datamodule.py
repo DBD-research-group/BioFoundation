@@ -85,7 +85,7 @@ class PretrainDataModule(BaseDataModuleHF):
         dataset = dataset.cast_column(
             column="audio",
             feature=Audio(
-                sampling_rate=self.dataset_config.sample_rate,
+                sample_rate=self.dataset_config.sample_rate,
                 mono=True,
                 decode=decode,
             ),

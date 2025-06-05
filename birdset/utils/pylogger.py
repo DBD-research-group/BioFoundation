@@ -38,7 +38,7 @@ class TBLogger(loggers.TensorBoardLogger):
                 params["torch_compile"] = network.torch_compile
                 params["sample_rate"] = (
                     network.sample_rate
-                )  # refactor note: maybe it should be 'sampling_rate' as key in params
+                )  # refactor note: maybe it should be 'sample_rate' as key in params
                 params["normalize_waverform"] = network.normalize_waveform
                 params["normalize_spectrogram"] = network.normalize_spectrogram
             except KeyError:
