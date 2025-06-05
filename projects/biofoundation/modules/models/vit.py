@@ -18,7 +18,7 @@ class ViT(BioFoundationModel):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = False,
         pretrain_info: PretrainInfoConfig = None,
-        pooling: Literal['just_cls', 'attentive', 'attentive_old', 'average', 'mean'] = "just_cls",
+        pooling: Literal['just_cls', 'attentive', 'attentive_old', 'average'] = "just_cls",
     ) -> None:
         super().__init__(
             num_classes=num_classes,
@@ -57,8 +57,6 @@ class ViT(BioFoundationModel):
             return self.attentive_pooling(embeddings)
         elif pooling == "average":
             return self.average_pooling(embeddings)
-        elif pooling == "mean":
-            return torch.mean(embeddings, dim=1)
         else:
             raise ValueError(
                 f"Pooling method '{pooling}' is not supported. Choose from 'just_cls', 'attentive', 'attentive_old', or 'average'."

@@ -71,7 +71,7 @@ class AudioMAEModel(ViT):
         preprocess_in_model: bool = True,
         classifier: nn.Module = None,
         pretrain_info: PretrainInfoConfig = None,
-        pooling: Literal['just_cls', 'attentive', 'attentive_old', 'average', 'mean'] = "just_cls",
+        pooling: Literal['just_cls', 'attentive', 'average'] = "just_cls",
     ) -> None:
         self.model = None  # Placeholder for the loaded model
         self.checkpoint_path = checkpoint_path
@@ -146,11 +146,8 @@ class AudioMAEModel(ViT):
         Returns:
             torch.Tensor: The embeddings from the model.
         """
-        if self.preprocess_in_model:
-            input_values = self.preprocess(input_values)
-        embeddings = self.model(input_values)
-        #! We can also get frame level embeddings for attentive probing and to fix problems check HF
-        return embeddings
+        embeddings = self.model.forward_features(input_values) # shape (batch_size, 513, 768)
+        return self.pool(embeddings, self.pooling_type)
 
 
     def get_num_layers(self) -> int:

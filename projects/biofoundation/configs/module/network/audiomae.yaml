@@ -1,6 +1,8 @@
 model: 
   _target_: biofoundation.modules.models.audiomae.AudioMAEModel
   num_classes: null
+  checkpoint_path: "hf_hub:gaunernst/vit_base_patch16_1024_128.audiomae_as2m_ft_as20k"
+  pooling: 'just_cls'
   
 model_name: audio_mae
 model_type: waveform
