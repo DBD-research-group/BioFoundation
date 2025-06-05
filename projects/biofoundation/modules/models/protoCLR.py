@@ -11,6 +11,7 @@ from birdset.configs.model_configs import PretrainInfoConfig
 
 from biofoundation.modules.models.ProtoCLR.melspectrogram import MelSpectrogramProcessor
 
+
 class ProtoCLRModel(BioFoundationModel):
     """
     Pretrained model for bird classification using Domain-Invariant Representation Learning of Bird Sounds
@@ -19,6 +20,7 @@ class ProtoCLRModel(BioFoundationModel):
     Github-Repository: https://github.com/ilyassmoummad/ProtoCLR
     Paper: https://arxiv.org/abs/2409.08589
     """
+
     EMBEDDING_SIZE = 384
 
     def __init__(
@@ -47,7 +49,6 @@ class ProtoCLRModel(BioFoundationModel):
         if preprocess_in_model:
             self.preprocessor = MelSpectrogramProcessor()
 
-
         # Define a linear classifier to use on top of the embeddings
         if classifier is None:
             self.classifier = nn.Linear(embedding_size, num_classes)
@@ -56,16 +57,17 @@ class ProtoCLRModel(BioFoundationModel):
 
         if local_checkpoint:
             self._load_local_checkpoint()
-            
+
         # freeze the model
         if freeze_backbone:
             for param in self.model.parameters():
                 param.requires_grad = False
 
     def load_model(self) -> None:
-       self.model = cvt13()
-       self.model.load_state_dict(torch.load("/workspace/models/protoclr/protoclr.pth", map_location="cpu"))
-
+        self.model = cvt13()
+        self.model.load_state_dict(
+            torch.load("/workspace/models/protoclr/protoclr.pth", map_location="cpu")
+        )
 
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
         return self.preprocessor(input_values)

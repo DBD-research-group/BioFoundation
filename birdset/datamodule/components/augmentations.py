@@ -900,7 +900,9 @@ class AddBackgroundNoise(BaseWaveformTransform):
         batch_size, _, num_samples = samples.shape
 
         # (batch_size, num_samples) RMS-normalized background noise
-        audio = self.audio if hasattr(self, "audio") else Audio(sampling_rate, mono=True)
+        audio = (
+            self.audio if hasattr(self, "audio") else Audio(sampling_rate, mono=True)
+        )
         self.transform_parameters["background"] = torch.stack(
             [self.random_background(audio, num_samples) for _ in range(batch_size)]
         )

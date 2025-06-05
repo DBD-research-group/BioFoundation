@@ -69,7 +69,7 @@ class EATSSL(BioFoundationModel):
 
         if local_checkpoint:
             self._load_local_checkpoint()
-            
+
         # freeze the model
         if freeze_backbone:
             for param in self.model.parameters():

@@ -14,18 +14,16 @@ from birdset.utils import pylogger
 log = pylogger.get_pylogger(__name__)
 
 
-
 class AS20DataModule(BaseDataModuleHF):
     def __init__(
         self,
         dataset: DatasetConfig = DatasetConfig(),
         loaders: LoadersConfig = LoadersConfig(),
         transforms: BirdSetTransformsWrapper = BirdSetTransformsWrapper(),
-        debug: bool = False, # It is quiet hard to get preprocessing right so debug mode for quicker testing
+        debug: bool = False,  # It is quiet hard to get preprocessing right so debug mode for quicker testing
     ):
         super().__init__(dataset=dataset, loaders=loaders, transforms=transforms)
         self.debug = debug
-
 
     def _load_data(self, decode: bool = True) -> DatasetDict:
         """
@@ -62,7 +60,7 @@ class AS20DataModule(BaseDataModuleHF):
                 decode=decode,
             ),
         )
-        return dataset    
+        return dataset
 
     def _preprocess_data(self, dataset):
         """
@@ -70,12 +68,14 @@ class AS20DataModule(BaseDataModuleHF):
         """
         # We need to remove duplicates from the dataset as it has double the amount for some reason
         seen = set()
+
         def is_unique(example):
             key = example["__key__"]
             if key in seen:
                 return False
             seen.add(key)
             return True
+
         dataset = dataset.filter(is_unique)
 
         dataset = dataset.rename_column("json", "labels")
@@ -87,12 +87,12 @@ class AS20DataModule(BaseDataModuleHF):
         )
 
         dataset = dataset.map(
-                self._classes_one_hot,
-                batched=True,
-                batch_size=500,
-                load_from_cache_file=True,
-                num_proc=self.dataset_config.n_workers,
-            )
+            self._classes_one_hot,
+            batched=True,
+            batch_size=500,
+            load_from_cache_file=True,
+            num_proc=self.dataset_config.n_workers,
+        )
 
         if self.debug:
             if isinstance(dataset, DatasetDict):

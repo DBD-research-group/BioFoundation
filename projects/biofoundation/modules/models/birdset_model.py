@@ -4,6 +4,7 @@ from torch import nn
 import torch
 from birdset.configs import PretrainInfoConfig
 from birdset.utils import pylogger
+
 log = pylogger.get_pylogger(__name__)
 
 
@@ -49,14 +50,14 @@ class BioFoundationModel(nn.Module):
             self.hf_path = None
             self.hf_name = None
             self.num_classes = num_classes
-        
+
         self.model = None
         self.preprocessor = None
 
         self.model = self._load_model()
         if self.preprocess_in_model:
             self.preprocessor = self._load_preprocessor()
-        
+
         if freeze_backbone:
             self.freeze_model_backbone()
 
@@ -66,8 +67,10 @@ class BioFoundationModel(nn.Module):
 
     def _load_model(self) -> nn.Module:
         # Implement this method in subclasses to load the model
-        raise NotImplementedError("Subclasses should implement this method to load the model.")
-    
+        raise NotImplementedError(
+            "Subclasses should implement this method to load the model."
+        )
+
     def freeze_model_backbone(self):
         """
         Freezes the backbone of the model.
@@ -82,7 +85,7 @@ class BioFoundationModel(nn.Module):
                 raise ValueError("Preprocessor is not configured properly.")
             input_values = self.preprocessor(input_values)
         return input_values
-    
+
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
@@ -106,16 +109,18 @@ class BioFoundationModel(nn.Module):
             logits = output.logits
 
         return logits
-    
+
     def _load_local_checkpoint(self):
         state_dict = torch.load(self.local_checkpoint)["state_dict"]
         model_state_dict = {
             key.replace("model.model.", ""): weight
-            for key, weight in state_dict.items() if key.startswith("model.model")
+            for key, weight in state_dict.items()
+            if key.startswith("model.model")
         }
         self.model.load_state_dict(model_state_dict)
-        log.info(f">> Loaded model state dict from local checkpoint: {self.local_checkpoint}")
-
+        log.info(
+            f">> Loaded model state dict from local checkpoint: {self.local_checkpoint}"
+        )
 
         # Process the keys for the classifier
         if self.classifier:
@@ -123,13 +128,14 @@ class BioFoundationModel(nn.Module):
                 try:
                     classifier_state_dict = {
                         key.replace("model.classifier.", ""): weight
-                        for key, weight in state_dict.items() if key.startswith("model.classifier.")
+                        for key, weight in state_dict.items()
+                        if key.startswith("model.classifier.")
                     }
                     self.classifier.load_state_dict(classifier_state_dict)
-                    log.info(f">> Also loaded classifier state dict from local checkpoint: {self.local_checkpoint}")
+                    log.info(
+                        f">> Also loaded classifier state dict from local checkpoint: {self.local_checkpoint}"
+                    )
                 except Exception as e:
-                    log.error(f"Could not load classifier state dict from local checkpoint: {e}")  
-
-
-
-    
+                    log.error(
+                        f"Could not load classifier state dict from local checkpoint: {e}"
+                    )

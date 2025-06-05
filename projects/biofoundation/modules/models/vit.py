@@ -1,5 +1,9 @@
 from typing import Literal
-from biofoundation.modules.models.Pooling import AttentivePooling, AttentivePooling_old, AveragePooling
+from biofoundation.modules.models.Pooling import (
+    AttentivePooling,
+    AttentivePooling_old,
+    AveragePooling,
+)
 from biofoundation.modules.models.birdset_model import BioFoundationModel
 import torch
 from torch import nn
@@ -18,7 +22,9 @@ class ViT(BioFoundationModel):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = False,
         pretrain_info: PretrainInfoConfig = None,
-        pooling: Literal['just_cls', 'attentive', 'attentive_old', 'average'] = "just_cls",
+        pooling: Literal[
+            "just_cls", "attentive", "attentive_old", "average"
+        ] = "just_cls",
     ) -> None:
         super().__init__(
             num_classes=num_classes,
@@ -28,22 +34,24 @@ class ViT(BioFoundationModel):
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
-            pretrain_info=pretrain_info
+            pretrain_info=pretrain_info,
         )
         self.pooling_type = pooling
         if self.pooling_type == "attentive":
-            attentive_heads = embedding_size // 64 # embedding_size // 64 should be 12 for 768
+            attentive_heads = (
+                embedding_size // 64
+            )  # embedding_size // 64 should be 12 for 768
             self.attentive_pooling = AttentivePooling(
                 dim=embedding_size, num_heads=attentive_heads
             )
         elif self.pooling_type == "attentive_old":
-            attentive_heads = embedding_size // 8 # beats uses 8 heads
+            attentive_heads = embedding_size // 8  # beats uses 8 heads
             self.attentive_pooling = AttentivePooling_old(
                 embed_dim=embedding_size, num_heads=attentive_heads
             )
         elif self.pooling_type == "average":
             self.average_pooling = AveragePooling()
-    
+
     def pool(self, embeddings: torch.Tensor, pooling) -> torch.Tensor:
         if pooling == "just_cls":
             # Use only the CLS token for classification
@@ -61,7 +69,7 @@ class ViT(BioFoundationModel):
             raise ValueError(
                 f"Pooling method '{pooling}' is not supported. Choose from 'just_cls', 'attentive', 'attentive_old', or 'average'."
             )
-    
+
     def get_num_layers(self) -> int:
         """
         Returns the number of layers in the model.

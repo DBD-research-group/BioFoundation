@@ -9,7 +9,7 @@ defaults:
   - override /datamodule/transforms: bird_default_multilabel.yaml
   - override /paths: default.yaml
   - override /hydra: default.yaml
-tags: ["biofoundation", "BirdSet", "augmentations", "linearprobing", "${module.network.model_name}"]
+tags: ["biofoundation", "BirdSet", "augmentations", "linearprobing", "${module.network.model_name}", "validation", "POW"]
 seed: 1
 train: True
 test: True
@@ -94,9 +94,9 @@ callbacks:
     every_n_train_steps: null
   early_stopping:
     _target_: lightning.pytorch.callbacks.EarlyStopping
-    monitor: "val/BCEWithLogitsLoss/dataloader_idx_0" 
+    monitor: "val/cmAP/dataloader_idx_1" 
     patience: 5
-    mode: 'min'
-    min_delta: 1e-4
+    mode: 'max'
+    min_delta: 1e-3
     verbose: False
     check_finite: True

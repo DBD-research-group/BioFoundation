@@ -46,7 +46,8 @@ class ASTSequenceClassifier(BioFoundationModel):
             state_dict = torch.load(local_checkpoint)["state_dict"]
             model_state_dict = {
                 key.replace("model.model.", ""): weight
-                for key, weight in state_dict.items() if key.startswith("model.model")
+                for key, weight in state_dict.items()
+                if key.startswith("model.model")
             }
 
             # Process the keys for the classifier
@@ -55,12 +56,14 @@ class ASTSequenceClassifier(BioFoundationModel):
                     try:
                         classifier_state_dict = {
                             key.replace("model.classifier.", ""): weight
-                            for key, weight in state_dict.items() if key.startswith("model.classifier.")
+                            for key, weight in state_dict.items()
+                            if key.startswith("model.classifier.")
                         }
                         self.classifier.load_state_dict(classifier_state_dict)
                     except Exception as e:
-                        print(f"Could not load classifier state dict from local checkpoint: {e}") 
-
+                        print(
+                            f"Could not load classifier state dict from local checkpoint: {e}"
+                        )
 
             self.model = ASTForAudioClassification.from_pretrained(
                 self.checkpoint,
@@ -125,7 +128,7 @@ class ASTSequenceClassifier(BioFoundationModel):
             else:
                 output = logits
         else:
-            output = self.classifier(cls_state)            
+            output = self.classifier(cls_state)
 
         return output
 

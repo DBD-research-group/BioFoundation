@@ -9,9 +9,11 @@ from torchaudio.compliance import kaldi
 
 from birdset.configs.model_configs import PretrainInfoConfig
 
+
 class KaldiLikeMelSpec(nn.Module):
     MEAN = -4.2677393
     STD = 4.5689974
+
     def __init__(self, target_frames: int = 1024):
         super().__init__()
         self.target_frames = target_frames
@@ -30,6 +32,7 @@ class KaldiLikeMelSpec(nn.Module):
             mel_scale="htk",
         )
         # Use log-mel, not dB, for exact Kaldi parity
+
     def forward(self, x):
         # Remove DC offset
         x = x - x.mean(dim=-1, keepdim=True)
@@ -40,12 +43,13 @@ class KaldiLikeMelSpec(nn.Module):
         n_frames = melspecs.shape[-1]
         if n_frames < self.target_frames:
             pad_amt = self.target_frames - n_frames
-            melspecs = F.pad(melspecs, (0, pad_amt), mode='constant', value=0)
+            melspecs = F.pad(melspecs, (0, pad_amt), mode="constant", value=0)
         else:
-            melspec = melspec[..., :self.target_frames]
+            melspec = melspec[..., : self.target_frames]
         melspecs = melspecs.permute(0, 1, 3, 2)  # (batch, 1, 128, 1024)
         melspecs = (melspecs - self.MEAN) / (self.STD * 2)
         return melspecs
+
 
 class AudioMAEModel(ViT):
     """
@@ -71,7 +75,7 @@ class AudioMAEModel(ViT):
         preprocess_in_model: bool = True,
         classifier: nn.Module = None,
         pretrain_info: PretrainInfoConfig = None,
-        pooling: Literal['just_cls', 'attentive', 'average'] = "just_cls",
+        pooling: Literal["just_cls", "attentive", "average"] = "just_cls",
     ) -> None:
         self.model = None  # Placeholder for the loaded model
         self.checkpoint_path = checkpoint_path
@@ -86,7 +90,7 @@ class AudioMAEModel(ViT):
             pooling=pooling,
             classifier=classifier,
         )
-        
+
         self.preprocessor = KaldiLikeMelSpec()
 
         if local_checkpoint:
@@ -100,9 +104,7 @@ class AudioMAEModel(ViT):
         """
         Load the model from Huggingface.
         """
-        return  timm.create_model(
-            self.checkpoint_path, pretrained=True
-        )
+        return timm.create_model(self.checkpoint_path, pretrained=True)
 
     def _load_preprocessor(self) -> nn.Module:
         """
@@ -110,7 +112,7 @@ class AudioMAEModel(ViT):
         This is a Kaldi-like Mel spectrogram extractor.
         """
         return KaldiLikeMelSpec()
-    
+
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
@@ -134,8 +136,6 @@ class AudioMAEModel(ViT):
 
         return logits
 
-
-
     def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
         """
         Get the embeddings and logits from the AUDIOMAE model.
@@ -146,9 +146,10 @@ class AudioMAEModel(ViT):
         Returns:
             torch.Tensor: The embeddings from the model.
         """
-        embeddings = self.model.forward_features(input_values) # shape (batch_size, 513, 768)
+        embeddings = self.model.forward_features(
+            input_values
+        )  # shape (batch_size, 513, 768)
         return self.pool(embeddings, self.pooling_type)
-
 
     def get_num_layers(self) -> int:
         """

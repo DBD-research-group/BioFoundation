@@ -1,6 +1,6 @@
 from typing import Dict, Literal, Optional
 
-from biofoundation.modules.models.Pooling import AttentivePooling
+from biofoundation.modules.models.Pooling import AttentivePooling, AveragePooling
 import torch
 from torch import nn
 import torchaudio
@@ -34,7 +34,7 @@ class ConvNextModule(BioFoundationModel):
         preprocess_in_model: bool = False,
         classifier: nn.Module | None = None,
         num_channels: int = 1,
-        checkpoint: str = 'DBD-research-group/ConvNeXT-Base-BirdSet-XCL',
+        checkpoint: str = "DBD-research-group/ConvNeXT-Base-BirdSet-XCL",
         local_checkpoint: Optional[str] = None,
         load_classifier_checkpoint: bool = True,
         cache_dir: Optional[str] = None,
@@ -42,14 +42,23 @@ class ConvNextModule(BioFoundationModel):
         pooling: Literal["default", "average", "attentive"] = "default",
     ):
         """
-        Note: Either num_classes or pretrain_info must be given
-        Args:
-            num_channels: Number of input channels.
-            checkpoint: huggingface checkpoint path of any model of correct type
-            num_classes: number of classification heads to be used in the model
-            local_checkpoint: local path to checkpoint file
-            cache_dir: specified cache dir to save model files at
-            pretrain_info: hf_path and hf_name of info will be used to infer if num_classes is None
+        Initializes the ConvNeXT-based model with configurable options for classification, checkpoint loading, and pooling.
+            num_classes (Optional[int], optional): Number of output classes for classification. If None, must provide `pretrain_info`. Defaults to None.
+            embedding_size (int, optional): Size of the embedding layer. Defaults to EMBEDDING_SIZE.
+            freeze_backbone (bool, optional): If True, freezes the backbone during training. Defaults to False.
+            preprocess_in_model (bool, optional): If True, applies preprocessing within the model. Defaults to False.
+            classifier (Optional[nn.Module], optional): Custom classifier head. If None, a default classifier is used. Defaults to None.
+            num_channels (int, optional): Number of input channels for the model. Defaults to 1.
+            checkpoint (str, optional): HuggingFace checkpoint path for loading pretrained weights. Defaults to 'DBD-research-group/ConvNeXT-Base-BirdSet-XCL'.
+            local_checkpoint (Optional[str], optional): Local path to a checkpoint file. If provided, loads weights from this file. Defaults to None.
+            load_classifier_checkpoint (bool, optional): Whether to load the classifier weights from the checkpoint. Defaults to True.
+            cache_dir (Optional[str], optional): Directory to cache model files. Defaults to None.
+            pretrain_info (PretrainInfoConfig, optional): Configuration for pretraining information. Used to infer `num_classes` if not provided. Defaults to None.
+            pooling (Literal["default", "average", "attentive"], optional): Pooling strategy to use in the model. Defaults to "default".
+        Notes:
+            - Either `num_classes` or `pretrain_info` must be provided.
+            - The model supports loading from both HuggingFace and local checkpoints.
+            - Pooling can be set to "default" (LayerNorm), "average", or "attentive" (AttentivePooling).
         """
         self.checkpoint = checkpoint
         self.cache_dir = cache_dir
@@ -69,12 +78,13 @@ class ConvNextModule(BioFoundationModel):
         self.config = self.model.config
 
         if self.pooling == "default":
-            self.pooler =  nn.LayerNorm(self.config.hidden_sizes[-1], eps=self.config.layer_norm_eps)
-        elif self.pooling == "attentive":
-            self.pooler = AttentivePooling(
-                dim=embedding_size, num_heads=8
+            self.pooler = nn.LayerNorm(
+                self.config.hidden_sizes[-1], eps=self.config.layer_norm_eps
             )
-       
+        elif self.pooling == "attentive":
+            self.pooler = AttentivePooling(dim=embedding_size, num_heads=8)
+        elif self.pooling == "average":
+            self.pooler = AveragePooling()
 
         if local_checkpoint:
             self._load_local_checkpoint()
@@ -114,26 +124,22 @@ class ConvNextModule(BioFoundationModel):
             )
             return ConvNextForImageClassification(config)
 
-
     def _load_preprocessor(self) -> nn.Module:
         """
         Loads the preprocessor for the ConvNext model.
         This method is used to preprocess the input audio data before passing it to the model.
         """
         return nn.Sequential(
-            torchaudio.transforms.Spectrogram(
-            n_fft=1024, hop_length=320, power=2.0
-            ),
+            torchaudio.transforms.Spectrogram(n_fft=1024, hop_length=320, power=2.0),
             transforms.Normalize((-4.268,), (4.569,)),
             PowerToDB(top_db=80),
         )
-        
 
     def get_embeddings(self, input_tensor) -> torch.Tensor:
         output = self.model(input_tensor, output_hidden_states=True, return_dict=True)
         if self.pooling == "default":
             embeddings = self.pooler(output.hidden_states[-1].mean([-2, -1]))
-        elif self.pooling == "attentive":
+        elif self.pooling == "attentive" or self.pooling == "average":
             # transform (B, N, H, W) to (B, N, C)
             x = output.hidden_states[-1].flatten(2).transpose(1, 2)
             embeddings = self.pooler(x)
@@ -162,7 +168,7 @@ class ConvNextModule(BioFoundationModel):
             logits = output.logits
 
         return logits
-    
+
     @torch.inference_mode()
     def get_logits(self, dataloader, device):
         pass
@@ -174,7 +180,6 @@ class ConvNextModule(BioFoundationModel):
     @torch.inference_mode()
     def get_representations(self, dataloader, device):
         pass
-
 
 
 class ConvNextEmbedding(nn.Module):
