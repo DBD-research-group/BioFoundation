@@ -189,7 +189,7 @@ def birdset_table(models, model_names, path, path_beans):
         f.write(
             "\\renewcommand{\\arraystretch}{1} % Increase row height\n"
             "\\setlength{\\tabcolsep}{2pt}\n\n"
-            "\\begin{tabular}{p{0.7cm} p{1.5cm} | ccccc | >{\centering\\arraybackslash}p{0.8cm} !{\\vrule width 1.3pt} cccccccc | >{\centering\\arraybackslash}p{0.8cm}}\n"
+            "\\begin{tabular}{>{\\centering\\arraybackslash}p{0.7cm} p{1.5cm} | ccccc | >{\centering\\arraybackslash}p{0.8cm} !{\\vrule width 1.3pt} cccccccc | >{\centering\\arraybackslash}p{0.8cm}}\n"
             "    \\toprule\n"
             "    \\multicolumn{2}{c}{} & \\multicolumn{6}{c}{\\textbf{BEANS}} & \\multicolumn{9}{c}{\\makecell[c]{\\textbf{BirdSet} \\\\[-12pt] \\hspace{-5.6cm} {\\color{gray}\\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\\\\n"
             "    \\addlinespace[2pt]\n"
@@ -314,7 +314,7 @@ def birdset_table(models, model_names, path, path_beans):
 print(f"Creating Latex table...")
 # Settings:
 MODELS = ["audio_mae", "aves", "BEATs", "biolingual", "bird_aves", "bird_mae", "convnext_bs", "eat_ssl", "BEATs_NatureLM", "perch", "proto_clr", "surfperch", "vit_ins"] # Extract these names from the CSV file
-MODEL_NAMES = ["Audio-MAE", "AVES", "BEATs", "Bioli-ngual", "Bird-AVES", "Bird-MAE", "Conv-NextBS", "EAT-SSL", "BEATs-NLM", "Perch", "Proto-CLR", "Surf-Perch", "ViT-INS"] # These names will appear in the table split at "-" ordered the same as MODELS
+MODEL_NAMES = ["Audio-MAE", "AVES", "BEATs", "Bioli-ngual", "Bird-AVES", "Bird-MAE", "Conv-Next$_{BS}$", "EAT-SSL", "BEATs-NLM", "Perch", "Proto-CLR", "Surf-Perch", "ViT-INS"] # These names will appear in the table split at "-" ordered the same as MODELS
 CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
 

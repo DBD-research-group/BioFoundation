@@ -1,7 +1,7 @@
 \renewcommand{\arraystretch}{1} % Increase row height
 \setlength{\tabcolsep}{2pt}
 
-\begin{tabular}{p{0.7cm} p{1.5cm} | ccccc | >{\centering\arraybackslash}p{0.8cm} !{\vrule width 1.3pt} cccccccc | >{\centering\arraybackslash}p{0.8cm}}
+\begin{tabular}{>{\centering\arraybackslash}p{0.7cm} p{1.5cm} | ccccc | >{\centering\arraybackslash}p{0.8cm} !{\vrule width 1.3pt} cccccccc | >{\centering\arraybackslash}p{0.8cm}}
     \toprule
     \multicolumn{2}{c}{} & \multicolumn{6}{c}{\textbf{BEANS}} & \multicolumn{9}{c}{\makecell[c]{\textbf{BirdSet} \\[-12pt] \hspace{-5.6cm} {\color{gray}\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\
     \addlinespace[2pt]
@@ -42,7 +42,7 @@
  & {Attentive} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
  & {Finetuned} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
 \hline 
-\multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}Conv \\ NextBS\end{tabular}}
+\multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}Conv \\ Next$_{BS}$\end{tabular}}
 }} & {Linear} & 71.7 & 41.8 & 37.7 & 67.6 & 34.5 & \heatgreen{50.7} &- & 18.4 & 10.4 & 10.4 & \textbf{30.9} & 22.1 & 3.9 & 8.2 & \heatgreen{14.3} \\ 
  & {Attentive} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
  & {Finetuned} & 90.6 & 68.4 & \textbf{78.4} & 88.5 & \underline{82.9} & \heatred[underline]{81.8} &- & \textbf{38.8} & \textbf{37.8} & \textbf{24.9} & \textbf{51.0} & \textbf{67.4} & \textbf{37.9} & - & \heatred[bold]{43.8} \\ 
