@@ -25,17 +25,11 @@ def format_values(values):
 
 
 def format_name(name):
-    # Convert to lowercase and replace underscores with spaces
-    name = name.lower().replace("_", "")
-    # Capitalize the first letter of each word
-    name = name.title()
-    # If the name is longer than 4 characters, split into two rows
-    if len(name) > 4:
-        mid = len(name) // 2
-        name = name[:mid] + " " + name[mid:]
+    if "-" in name:
+        parts = name.split("-")
         name = (
             "\\rotatebox[origin=c]{90}{\\begin{tabular}{@{}c@{}}"
-            + " \\\\ ".join(name.split())
+            + " \\\\ ".join(parts)
             + "\\end{tabular}}\n"
         )
     else:
@@ -193,9 +187,9 @@ def birdset_table(models, model_names, path, path_beans):
     # === Top table part ===
     with open(output_path, "a") as f:
         f.write(
-            "\\renewcommand{\\arraystretch}{0.8} % Increase row height\n"
+            "\\renewcommand{\\arraystretch}{1} % Increase row height\n"
             "\\setlength{\\tabcolsep}{2pt}\n\n"
-            "\\begin{tabular}{p{0.55cm} p{1.4cm} | ccccc | >{\centering\\arraybackslash}p{0.8cm} !{\\vrule width 1.3pt} cccccccc | >{\centering\\arraybackslash}p{0.8cm}}\n"
+            "\\begin{tabular}{p{0.7cm} p{1.5cm} | ccccc | >{\centering\\arraybackslash}p{0.8cm} !{\\vrule width 1.3pt} cccccccc | >{\centering\\arraybackslash}p{0.8cm}}\n"
             "    \\toprule\n"
             "    \\multicolumn{2}{c}{} & \\multicolumn{6}{c}{\\textbf{BEANS}} & \\multicolumn{9}{c}{\\makecell[c]{\\textbf{BirdSet} \\\\[-12pt] \\hspace{-5.6cm} {\\color{gray}\\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\\\\n"
             "    \\addlinespace[2pt]\n"
@@ -320,7 +314,7 @@ def birdset_table(models, model_names, path, path_beans):
 print(f"Creating Latex table...")
 # Settings:
 MODELS = ["audio_mae", "aves", "BEATs", "biolingual", "bird_aves", "bird_mae", "convnext_bs", "eat_ssl", "BEATs_NatureLM", "perch", "proto_clr", "surfperch", "vit_ins"] # Extract these names from the CSV file
-MODEL_NAMES = ["AudioMAE", "AVES", "BEATs", "Biolingual", "Bird Aves", "Bird MAE", "ConvNext BS", "EAT SSL", "BEATs NLM", "Perch", "Proto CLR", "SurfPerch", "ViT INS"] # These names will appear in the table ordered the same as MODELS
+MODEL_NAMES = ["Audio-MAE", "AVES", "BEATs", "Bioli-ngual", "Bird-AVES", "Bird-MAE", "Conv-NextBS", "EAT-SSL", "BEATs-NLM", "Perch", "Proto-CLR", "Surf-Perch", "ViT-INS"] # These names will appear in the table split at "-" ordered the same as MODELS
 CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
 
