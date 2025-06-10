@@ -6,10 +6,10 @@ from typing import Optional
 
 from birdset.configs import PretrainInfoConfig
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
-class AvesClassifier(BirdSetModel):
+class AvesClassifier(BioFoundationModel):
     """
     Pretrained model for audio classification using the AVES model.
 

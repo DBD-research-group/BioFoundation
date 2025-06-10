@@ -10,10 +10,10 @@ from torch import nn
 
 from birdset.configs import PretrainInfoConfig
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
-class PerchModel(BirdSetModel):
+class PerchModel(BioFoundationModel):
     """
     A PyTorch model for bird vocalization classification, integrating a TensorFlow Hub model.
 
@@ -108,7 +108,9 @@ class PerchModel(BirdSetModel):
         # with tf.device('/CPU:0'):
         # self.model = hub.load(model_url)
         physical_devices = tf.config.list_physical_devices("GPU")
-        if self.gpu_to_use is not None: # If no gpu is specified just choose the first one that is available (Implemented for sweeps)
+        if (
+            self.gpu_to_use is not None
+        ):  # If no gpu is specified just choose the first one that is available (Implemented for sweeps)
             tf.config.experimental.set_visible_devices(
                 physical_devices[self.gpu_to_use], "GPU"
             )
@@ -116,12 +118,8 @@ class PerchModel(BirdSetModel):
                 physical_devices[self.gpu_to_use], True
             )
         else:
-            tf.config.experimental.set_visible_devices(
-                physical_devices[0], "GPU"
-            )
-            tf.config.experimental.set_memory_growth(
-                physical_devices[0], True
-            )
+            tf.config.experimental.set_visible_devices(physical_devices[0], "GPU")
+            tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
         tf.config.optimizer.set_jit(True)
         self.model = hub.load(model_url)

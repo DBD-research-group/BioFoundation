@@ -102,7 +102,7 @@ class BaseDataModuleHF(L.LightningDataModule):
         Outputs data with the following columns:
             - audio: The preprocessed audio data, containing:
                 - 'array': The audio data as a numpy array.
-                - 'sampling_rate': The sampling rate of the audio data.
+                - 'sample_rate': The sample rate of the audio data.
             - labels: The label for the audio data
 
         """
@@ -257,7 +257,7 @@ class BaseDataModuleHF(L.LightningDataModule):
         """
         Load audio dataset from Hugging Face Datasets.
 
-        Returns HF dataset with audio column casted to Audio feature, containing audio data as numpy array and sampling rate.
+        Returns HF dataset with audio column casted to Audio feature, containing audio data as numpy array and sample rate.
         """
         log.info("> Loading data set.")
 
@@ -285,7 +285,7 @@ class BaseDataModuleHF(L.LightningDataModule):
         dataset = dataset.cast_column(
             column="audio",
             feature=Audio(
-                sampling_rate=self.dataset_config.sampling_rate,
+                sampling_rate=self.dataset_config.sample_rate,
                 mono=True,
                 decode=decode,
             ),
@@ -501,7 +501,10 @@ class BaseDataModuleHF(L.LightningDataModule):
 
     def val_dataloader(self):
         if self.dataset_config.use_test_as_valid:
-            return DataLoader(self.test_dataset, **asdict(self.loaders_config.valid))
+            return [
+                DataLoader(self.val_dataset, **asdict(self.loaders_config.valid)),
+                DataLoader(self.test_dataset, **asdict(self.loaders_config.valid)),
+            ]
         else:
             return DataLoader(self.val_dataset, **asdict(self.loaders_config.valid))  # type: ignore
 

@@ -26,7 +26,7 @@ class BirdSetEmbeddingDataModule(EmbeddingDataModule, BirdSetDataModule):
             task="multilabel",
             classlimit=500,
             eventlimit=5,
-            sampling_rate=32000,
+            sample_rate=32000,
         ),
         loaders: LoadersConfig = LoadersConfig(),
         transforms: EmbeddingTransforms = EmbeddingTransforms(),
@@ -45,7 +45,7 @@ class BirdSetEmbeddingDataModule(EmbeddingDataModule, BirdSetDataModule):
         decoder = EventDecoding(
             min_len=0,
             max_len=embedding_model.length,
-            sampling_rate=embedding_model.sampling_rate,
+            sample_rate=embedding_model.sample_rate,
         )
         EmbeddingDataModule.__init__(
             self,

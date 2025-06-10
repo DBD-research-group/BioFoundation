@@ -6,10 +6,10 @@ from typing import Tuple
 from birdset.configs import PretrainInfoConfig
 from typing import Optional
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
-class BioLingualClassifier(BirdSetModel):
+class BioLingualClassifier(BioFoundationModel):
     """
     Pretrained model for audio classification using the Biolingual model.
 
@@ -55,7 +55,7 @@ class BioLingualClassifier(BirdSetModel):
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
-            pretrain_info=pretrain_info
+            pretrain_info=pretrain_info,
         )
 
         self.checkpoint = checkpoint
@@ -69,7 +69,9 @@ class BioLingualClassifier(BirdSetModel):
             self.classifier = classifier
 
         if preprocess_in_model:
-            self.processor = ClapProcessor.from_pretrained(checkpoint) # This takes too much memory if loaded in addition to one in transforms
+            self.processor = ClapProcessor.from_pretrained(
+                checkpoint
+            )  # This takes too much memory if loaded in addition to one in transforms
 
         if local_checkpoint:
             self._load_local_checkpoint()
@@ -84,11 +86,11 @@ class BioLingualClassifier(BirdSetModel):
         The waveform gets resampled to 16kHz, transformed into a fbank and then normalized.
         """
         if self.preprocess_in_model:
-            input_values = input_values .squeeze(1)
+            input_values = input_values.squeeze(1)
             return self.processor(
                 audios=input_values.cpu().numpy(),
                 return_tensors="pt",
-                sampling_rate=48000,
+                sample_rate=48000,
             ).input_features.to(input_values.device)
         else:
             return input_values

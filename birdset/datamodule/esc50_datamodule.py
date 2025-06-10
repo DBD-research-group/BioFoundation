@@ -66,7 +66,7 @@ class ESC50DataModule(BaseDataModuleHF):
         Outputs data with the following columns:
             - audio: The preprocessed audio data, containing:
                 - 'array': The audio data as a numpy array.
-                - 'sampling_rate': The sampling rate of the audio data.
+                - 'sample_rate': The sampling rate of the audio data.
             - labels: The label for the audio data
 
         """
@@ -98,7 +98,7 @@ class ESC50DataModule(BaseDataModuleHF):
         dataset = dataset.cast_column(
             column="audio",
             feature=Audio(
-                sampling_rate=self.dataset_config.sampling_rate,
+                sample_rate=self.dataset_config.sample_rate,
                 mono=True,
                 decode=True,
             ),

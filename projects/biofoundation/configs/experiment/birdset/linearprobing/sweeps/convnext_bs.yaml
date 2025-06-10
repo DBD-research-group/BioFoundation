@@ -1,0 +1,35 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - birdset/linearprobing/linearprobing_config.yaml 
+  - override /module/network: convnext_bs.yaml
+
+tags: ["biofoundation", "BEANS", "augmentations", "linearprobing", "${module.network.model_name}"]
+
+trainer:
+  min_epochs: 1
+  max_epochs: 20
+  devices: [0]
+
+module:
+  optimizer:
+    lr: 0.005
+    weight_decay: 5e-4
+  
+datamodule:
+  dataset:
+    hf_name: 'POW'
+    dataset_name: 'POW'
+    use_test_as_valid: True
+  
+  loaders:
+    train:
+      batch_size: 128
+
+
+callbacks:
+  model_checkpoint:
+    monitor: "val/BCEWithLogitsLoss/dataloader_idx_0" 
+    save_top_k: 1
+    every_n_train_steps: null
+  early_stopping: null

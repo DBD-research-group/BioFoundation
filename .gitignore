@@ -189,3 +189,4 @@ saved_models/*
 lightning_logs/
 
 models/*
+settings.json
