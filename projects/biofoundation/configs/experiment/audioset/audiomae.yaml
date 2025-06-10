@@ -1,0 +1,17 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - audioset/finetuning_config.yaml 
+  - override /module/network: audiomae.yaml 
+
+train: False
+test: True
+
+datamodule:
+  debug: False
+
+module:
+  network:
+    model: 
+      checkpoint_path: "hf_hub:gaunernst/vit_base_patch16_1024_128.audiomae_as2m_ft_as20k"
+      classifier: null

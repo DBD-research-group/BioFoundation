@@ -132,7 +132,7 @@ model:
 model_name: eat_ssl
 model_type: waveform
 torch_compile: False
-sampling_rate: 16_000
+sample_rate: 16_000
 normalize_spectrogram: False
 normalize_waveform: False
 embedding_size: 768

@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 
+
 # === Functions ===
 # Format row with LaTeX
 def format_values(values):
@@ -34,6 +35,7 @@ def format_values(values):
     # Transpose back to match the original structure
     return np.array(formatted_columns).T.tolist()
 
+
 def format_name(name):
     # Convert to lowercase and replace underscores with spaces
     name = name.lower().replace("_", "")
@@ -44,15 +46,14 @@ def format_name(name):
         mid = len(name) // 2
         name = name[:mid] + " " + name[mid:]
         name = (
-            "\\rotatebox[origin=c]{90}{\\begin{tabular}{@{}c@{}}" +
-            " \\\\ ".join(name.split()) +
-            "\\end{tabular}}\n"
+            "\\rotatebox[origin=c]{90}{\\begin{tabular}{@{}c@{}}"
+            + " \\\\ ".join(name.split())
+            + "\\end{tabular}}\n"
         )
-    else: 
-        name = (
-            "\\rotatebox[origin=c]{90}{" + name + "}\n"
-        )    
+    else:
+        name = "\\rotatebox[origin=c]{90}{" + name + "}\n"
     return name
+
 
 def format_hm(values, color):
     rounded = np.round(values, 1)
@@ -60,32 +61,43 @@ def format_hm(values, color):
     second_max_idx = np.argsort(rounded)[-2]
     formatted = [f"\\heat{color}{{{val:.1f}}}" if val > 0 else "-" for val in rounded]
     formatted[max_idx] = f"\\heat{color}[bold]{{{rounded[max_idx]:.1f}}}"
-    formatted[second_max_idx] = f"\\heat{color}[underline]{{{rounded[second_max_idx]:.1f}}}"
+    formatted[second_max_idx] = (
+        f"\\heat{color}[underline]{{{rounded[second_max_idx]:.1f}}}"
+    )
     return formatted
+
 
 # === BEANS ===
 def beans_table(path):
-    df = pd.read_csv(path, sep=',')
+    df = pd.read_csv(path, sep=",")
 
     # Rename for convenience
-    df = df.rename(columns={
-        'datamodule.dataset.dataset_name': 'Dataset',
-        'module.network.model_name': 'Model',
-        'tags': 'Tags',
-        'test/AUROC': 'AUROC',
-        'test/MulticlassAccuracy': 'Top1'
-    })
+    df = df.rename(
+        columns={
+            "datamodule.dataset.dataset_name": "Dataset",
+            "module.network.model_name": "Model",
+            "tags": "Tags",
+            "test/AUROC": "AUROC",
+            "test/MulticlassAccuracy": "Top1",
+        }
+    )
 
     # Convert scores to percentage
-    df['AUROC'] *= 100
-    df['Top1'] *= 100
+    df["AUROC"] *= 100
+    df["Top1"] *= 100
 
     # List of unique models and datasets
-    models = sorted(df['Model'].unique(), key=lambda x: x.lower()) # This will change often
+    models = sorted(
+        df["Model"].unique(), key=lambda x: x.lower()
+    )  # This will change often
 
-    datasets = ["beans_watkins", "beans_bats", "beans_cbi", "beans_dogs", "beans_humbugdb"]  # This will not change often
-
-
+    datasets = [
+        "beans_watkins",
+        "beans_bats",
+        "beans_cbi",
+        "beans_dogs",
+        "beans_humbugdb",
+    ]  # This will not change often
 
     # Delete old LaTeX file if it exists
     output_path = "projects/biofoundation/results/latex/beans_table.tex"
@@ -108,7 +120,6 @@ def beans_table(path):
             "    \\midrule \\rule{0pt}{0.8em}\n"
         )
 
-
     # === Build table rows ===
     # Initialize lists to store all values for later processing
     all_top1_lp, all_top1_ft = [], []
@@ -122,19 +133,51 @@ def beans_table(path):
         auroc_lp, auroc_ft = [], []
 
         for dataset in datasets:
-            lp_rows = df[(df['Model'] == model) & (df['Dataset'] == dataset) & (df['Tags'].str.contains('linearprobing'))]
-            ft_rows = df[(df['Model'] == model) & (df['Dataset'] == dataset) & (df['Tags'].str.contains('finetune|finetuning'))]
-            
-            top1_lp.append(lp_rows['Top1'].max() if not lp_rows.empty else 0)  # Max value for LP Top1
-            top1_ft.append(ft_rows['Top1'].max() if not ft_rows.empty else 0)  # Max value for FT Top1
-            auroc_lp.append(lp_rows['AUROC'].max() if not lp_rows.empty else 0)  # Max value for LP AUROC
-            auroc_ft.append(ft_rows['AUROC'].max() if not ft_rows.empty else 0)  # Max value for FT AUROC
+            lp_rows = df[
+                (df["Model"] == model)
+                & (df["Dataset"] == dataset)
+                & (df["Tags"].str.contains("linearprobing"))
+            ]
+            ft_rows = df[
+                (df["Model"] == model)
+                & (df["Dataset"] == dataset)
+                & (df["Tags"].str.contains("finetune|finetuning"))
+            ]
+
+            top1_lp.append(
+                lp_rows["Top1"].max() if not lp_rows.empty else 0
+            )  # Max value for LP Top1
+            top1_ft.append(
+                ft_rows["Top1"].max() if not ft_rows.empty else 0
+            )  # Max value for FT Top1
+            auroc_lp.append(
+                lp_rows["AUROC"].max() if not lp_rows.empty else 0
+            )  # Max value for LP AUROC
+            auroc_ft.append(
+                ft_rows["AUROC"].max() if not ft_rows.empty else 0
+            )  # Max value for FT AUROC
 
         # Averages
-        avg_top1_lp = np.round(np.mean([x for x in top1_lp if x > 0]), 1) if any(x > 0 for x in top1_lp) else 0
-        avg_top1_ft = np.round(np.mean([x for x in top1_ft if x > 0]), 1) if any(x > 0 for x in top1_ft) else 0
-        avg_auroc_lp = np.round(np.mean([x for x in auroc_lp if x > 0]), 1) if any(x > 0 for x in auroc_lp) else 0
-        avg_auroc_ft = np.round(np.mean([x for x in auroc_ft if x > 0]), 1) if any(x > 0 for x in auroc_ft) else 0
+        avg_top1_lp = (
+            np.round(np.mean([x for x in top1_lp if x > 0]), 1)
+            if any(x > 0 for x in top1_lp)
+            else 0
+        )
+        avg_top1_ft = (
+            np.round(np.mean([x for x in top1_ft if x > 0]), 1)
+            if any(x > 0 for x in top1_ft)
+            else 0
+        )
+        avg_auroc_lp = (
+            np.round(np.mean([x for x in auroc_lp if x > 0]), 1)
+            if any(x > 0 for x in auroc_lp)
+            else 0
+        )
+        avg_auroc_ft = (
+            np.round(np.mean([x for x in auroc_ft if x > 0]), 1)
+            if any(x > 0 for x in auroc_ft)
+            else 0
+        )
 
         # Store all values for later processing
         all_top1_lp.append(top1_lp)
@@ -161,13 +204,21 @@ def beans_table(path):
         for i, model in enumerate(models):
 
             # Write LaTeX to a file
-            f.write(f"\\multirow{{2}}{{*}}{{\\textbf{{{model.replace('_', ' ').title()}}}}} & {{Top-1}} & " +
-                    " & ".join(all_top1_lp[i]) + f" & " + " & ".join(all_top1_ft[i]) +
-                    f" & {all_avg_top1_lp[i]} & {all_avg_top1_ft[i]} \\\\ [0.1em]\n")
+            f.write(
+                f"\\multirow{{2}}{{*}}{{\\textbf{{{model.replace('_', ' ').title()}}}}} & {{Top-1}} & "
+                + " & ".join(all_top1_lp[i])
+                + f" & "
+                + " & ".join(all_top1_ft[i])
+                + f" & {all_avg_top1_lp[i]} & {all_avg_top1_ft[i]} \\\\ [0.1em]\n"
+            )
 
-            f.write(f" & {{AUROC}} & " +
-                    " & ".join(all_auroc_lp[i]) + f" & " + " & ".join(all_auroc_ft[i]) +
-                    f" & {all_avg_auroc_lp[i]} & {all_avg_auroc_ft[i]} \\\\ [0.1em]")
+            f.write(
+                f" & {{AUROC}} & "
+                + " & ".join(all_auroc_lp[i])
+                + f" & "
+                + " & ".join(all_auroc_ft[i])
+                + f" & {all_avg_auroc_lp[i]} & {all_avg_auroc_ft[i]} \\\\ [0.1em]"
+            )
             if model != models[-1]:
                 f.write(f"\\hline \\rule{{0pt}}{{0.8em}}\n")
 
@@ -179,30 +230,41 @@ def beans_table(path):
 
 # === BirdSet ===
 def birdset_table(path):
-    df = pd.read_csv(path, sep=',')
+    df = pd.read_csv(path, sep=",")
 
     # Rename for convenience
-    df = df.rename(columns={
-        'datamodule.dataset.dataset_name': 'Dataset',
-        'module.network.model_name': 'Model',
-        'tags': 'Tags',
-        'test/MultilabelAUROC': 'AUROC',
-        'test/T1Accuracy': 'Top1',
-        'test/cmAP5': 'Cmap',
-    })
+    df = df.rename(
+        columns={
+            "datamodule.dataset.dataset_name": "Dataset",
+            "module.network.model_name": "Model",
+            "tags": "Tags",
+            "test/MultilabelAUROC": "AUROC",
+            "test/T1Accuracy": "Top1",
+            "test/cmAP5": "Cmap",
+        }
+    )
 
     # Convert scores to percentage
-    df['AUROC'] *= 100
-    df['Top1'] *= 100
-    df['Cmap'] *= 100
+    df["AUROC"] *= 100
+    df["Top1"] *= 100
+    df["Cmap"] *= 100
 
     # List of unique models and datasets
-    df['Model'] = df['Model'].str.replace('eat_bs', 'eat') #! Name inconsistency
-    models = sorted(df['Model'].unique(), key=lambda x: x.lower()) # This will change often
+    df["Model"] = df["Model"].str.replace("eat_bs", "eat")  #! Name inconsistency
+    models = sorted(
+        df["Model"].unique(), key=lambda x: x.lower()
+    )  # This will change often
 
-    datasets = ["PER", "POW", "NES", "UHH", "HSN", "NBP", "SSW", "SNE"]  # This will not change often
-
-
+    datasets = [
+        "PER",
+        "POW",
+        "NES",
+        "UHH",
+        "HSN",
+        "NBP",
+        "SSW",
+        "SNE",
+    ]  # This will not change often
 
     # Delete old LaTeX file if it exists
     output_path = "projects/biofoundation/results/latex/birdset_table.tex"
@@ -227,7 +289,6 @@ def birdset_table(path):
             "    \\addlinespace[2pt]\n"
         )
 
-
     # === Build table rows ===
     # Initialize lists to store all values for later processing
     all_top1_lp, all_top1_ft = [], []
@@ -244,23 +305,67 @@ def birdset_table(path):
         cmap_lp, cmap_ft = [], []
 
         for dataset in datasets:
-            lp_rows = df[(df['Model'] == model) & (df['Dataset'] == dataset) & (df['Tags'].str.contains('linearprobing'))]
-            ft_rows = df[(df['Model'] == model) & (df['Dataset'] == dataset) & (df['Tags'].str.contains('finetune|finetuning'))]
-            
-            top1_lp.append(lp_rows['Top1'].max() if not lp_rows.empty else 0)  # Max value for LP Top1
-            top1_ft.append(ft_rows['Top1'].max() if not ft_rows.empty else 0)  # Max value for FT Top1
-            auroc_lp.append(lp_rows['AUROC'].max() if not lp_rows.empty else 0)  # Max value for LP AUROC
-            auroc_ft.append(ft_rows['AUROC'].max() if not ft_rows.empty else 0)  # Max value for FT AUROC
-            cmap_lp.append(lp_rows['Cmap'].max() if not lp_rows.empty else 0)  # Max value for LP Cmap
-            cmap_ft.append(ft_rows['Cmap'].max() if not ft_rows.empty else 0)  # Max value for FT Cmap
+            lp_rows = df[
+                (df["Model"] == model)
+                & (df["Dataset"] == dataset)
+                & (df["Tags"].str.contains("linearprobing"))
+            ]
+            ft_rows = df[
+                (df["Model"] == model)
+                & (df["Dataset"] == dataset)
+                & (df["Tags"].str.contains("finetune|finetuning"))
+            ]
+
+            top1_lp.append(
+                lp_rows["Top1"].max() if not lp_rows.empty else 0
+            )  # Max value for LP Top1
+            top1_ft.append(
+                ft_rows["Top1"].max() if not ft_rows.empty else 0
+            )  # Max value for FT Top1
+            auroc_lp.append(
+                lp_rows["AUROC"].max() if not lp_rows.empty else 0
+            )  # Max value for LP AUROC
+            auroc_ft.append(
+                ft_rows["AUROC"].max() if not ft_rows.empty else 0
+            )  # Max value for FT AUROC
+            cmap_lp.append(
+                lp_rows["Cmap"].max() if not lp_rows.empty else 0
+            )  # Max value for LP Cmap
+            cmap_ft.append(
+                ft_rows["Cmap"].max() if not ft_rows.empty else 0
+            )  # Max value for FT Cmap
 
         # Averages
-        avg_top1_lp = round(np.mean([x for x in top1_lp if x > 0]), 1) if any(x > 0 for x in top1_lp) else 0
-        avg_top1_ft = round(np.mean([x for x in top1_ft if x > 0]), 1) if any(x > 0 for x in top1_ft) else 0
-        avg_auroc_lp = round(np.mean([x for x in auroc_lp if x > 0]), 1) if any(x > 0 for x in auroc_lp) else 0
-        avg_auroc_ft = round(np.mean([x for x in auroc_ft if x > 0]), 1) if any(x > 0 for x in auroc_ft) else 0
-        avg_cmap_lp = round(np.mean([x for x in cmap_lp if x > 0]), 1) if any(x > 0 for x in cmap_lp) else 0
-        avg_cmap_ft = round(np.mean([x for x in cmap_ft if x > 0]), 1) if any(x > 0 for x in cmap_ft) else 0
+        avg_top1_lp = (
+            round(np.mean([x for x in top1_lp if x > 0]), 1)
+            if any(x > 0 for x in top1_lp)
+            else 0
+        )
+        avg_top1_ft = (
+            round(np.mean([x for x in top1_ft if x > 0]), 1)
+            if any(x > 0 for x in top1_ft)
+            else 0
+        )
+        avg_auroc_lp = (
+            round(np.mean([x for x in auroc_lp if x > 0]), 1)
+            if any(x > 0 for x in auroc_lp)
+            else 0
+        )
+        avg_auroc_ft = (
+            round(np.mean([x for x in auroc_ft if x > 0]), 1)
+            if any(x > 0 for x in auroc_ft)
+            else 0
+        )
+        avg_cmap_lp = (
+            round(np.mean([x for x in cmap_lp if x > 0]), 1)
+            if any(x > 0 for x in cmap_lp)
+            else 0
+        )
+        avg_cmap_ft = (
+            round(np.mean([x for x in cmap_ft if x > 0]), 1)
+            if any(x > 0 for x in cmap_ft)
+            else 0
+        )
 
         # Store all values for later processing
         all_top1_lp.append(top1_lp)
@@ -280,7 +385,7 @@ def birdset_table(path):
     all_top1_lp = format_values(all_top1_lp)
     all_top1_ft = format_values(all_top1_ft)
     all_auroc_lp = format_values(all_auroc_lp)
-    all_auroc_ft = format_values(all_auroc_ft) 
+    all_auroc_ft = format_values(all_auroc_ft)
     all_cmap_lp = format_values(all_cmap_lp)
     all_cmap_ft = format_values(all_cmap_ft)
 
@@ -296,25 +401,38 @@ def birdset_table(path):
         for i, model in enumerate(models):
 
             # Write LaTeX to a file
-            f.write(f"\\multirow{{3}}{{*}}{{\\textbf{{{format_name(model)}}}}} & {{cmAP}} & " +
-                    " & ".join(all_cmap_lp[i]) + f" & " + " & ".join(all_cmap_ft[i]) +
-                    f" & {all_avg_cmap_lp[i]} & {all_avg_cmap_ft[i]} \\\\ [0.1em]\n")
+            f.write(
+                f"\\multirow{{3}}{{*}}{{\\textbf{{{format_name(model)}}}}} & {{cmAP}} & "
+                + " & ".join(all_cmap_lp[i])
+                + f" & "
+                + " & ".join(all_cmap_ft[i])
+                + f" & {all_avg_cmap_lp[i]} & {all_avg_cmap_ft[i]} \\\\ [0.1em]\n"
+            )
 
-            f.write(f" & {{AUROC}} & " +
-                    " & ".join(all_auroc_lp[i]) + f" & " + " & ".join(all_auroc_ft[i]) +
-                    f" & {all_avg_auroc_lp[i]} & {all_avg_auroc_ft[i]} \\\\ [0.1em]\n")
-            
-            f.write(f" & {{Top-1}} & " +
-                    " & ".join(all_top1_lp[i]) + f" & " + " & ".join(all_top1_ft[i]) +
-                    f" & {all_avg_top1_lp[i]} & {all_avg_top1_ft[i]} \\\\ [0.1em]")
-            
+            f.write(
+                f" & {{AUROC}} & "
+                + " & ".join(all_auroc_lp[i])
+                + f" & "
+                + " & ".join(all_auroc_ft[i])
+                + f" & {all_avg_auroc_lp[i]} & {all_avg_auroc_ft[i]} \\\\ [0.1em]\n"
+            )
+
+            f.write(
+                f" & {{Top-1}} & "
+                + " & ".join(all_top1_lp[i])
+                + f" & "
+                + " & ".join(all_top1_ft[i])
+                + f" & {all_avg_top1_lp[i]} & {all_avg_top1_ft[i]} \\\\ [0.1em]"
+            )
+
             if model != models[-1]:
                 f.write(f"\\hline \n")
 
     # === Table end part ===
     with open(output_path, "a") as f:
         f.write("    \\bottomrule\n")
-        f.write("\\end{tabular}\n")        
+        f.write("\\end{tabular}\n")
+
 
 # === Command parser ===
 # Get the first argument (after the script name)
@@ -329,6 +447,6 @@ elif arg == "birdset":
     CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
     birdset_table(CSV_PATH)
 
-else: 
+else:
     print("Invalid argument. Use 'beans' or 'birdset'.")
     sys.exit(1)

@@ -13,7 +13,7 @@ class HSNDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.2,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -23,7 +23,7 @@ class HSNDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -39,7 +39,7 @@ class HSNDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -52,7 +52,7 @@ class NBPDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.2,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -63,7 +63,7 @@ class NBPDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -79,7 +79,7 @@ class NBPDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -92,7 +92,7 @@ class NESDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.2,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -103,7 +103,7 @@ class NESDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -119,7 +119,7 @@ class NESDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -132,7 +132,7 @@ class PERDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.2,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -143,7 +143,7 @@ class PERDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -159,7 +159,7 @@ class PERDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -172,7 +172,7 @@ class POWDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.2,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -183,7 +183,7 @@ class POWDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -199,7 +199,7 @@ class POWDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -212,7 +212,7 @@ class SNEDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.2,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -223,7 +223,7 @@ class SNEDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -239,7 +239,7 @@ class SNEDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -252,7 +252,7 @@ class SSWDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.2,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -263,7 +263,7 @@ class SSWDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -279,7 +279,7 @@ class SSWDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -292,7 +292,7 @@ class XCMDataModule(BirdSetDataModule):
         n_workers: int = 3,
         val_split: float = 0.05,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -303,7 +303,7 @@ class XCMDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -319,7 +319,7 @@ class XCMDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -332,7 +332,7 @@ class XCLDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.05,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -343,7 +343,7 @@ class XCLDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -359,7 +359,7 @@ class XCLDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )
 
@@ -372,7 +372,7 @@ class UHHDataModule(BirdSetDataModule):
         n_workers: int = 1,
         val_split: float = 0.2,
         task: Literal["multiclass", "multilabel"] = "multilabel",
-        sampling_rate: int = 32000,
+        sample_rate: int = 32000,
         classlimit: int = 500,
         eventlimit: int = 5,
     ):
@@ -383,7 +383,7 @@ class UHHDataModule(BirdSetDataModule):
             n_workers (int, optional): The number of worker processes used for data loading. Defaults to 3.
             val_split (float, optional): The proportion of the dataset reserved for validation. Defaults to 0.2.
             task (str, optional): Defines the type of task (e.g., 'multilabel' or 'multiclass'). Defaults to "multilabel".
-            sampling_rate (int, optional): The sampling rate for audio data processing. Defaults to 32000.
+            sample_rate (int, optional): The sample rate for audio data processing. Defaults to 32000.
             classlimit (int, optional): The maximum number of samples per class. If None, all samples are used. Defaults to 500.
             eventlimit (int, optional): Defines the maximum number of audio events processed per audio file, capping the quantity to ensure balance across files. If None, all events are processed. Defaults to 5.
         """
@@ -399,6 +399,6 @@ class UHHDataModule(BirdSetDataModule):
                 task=task,
                 classlimit=classlimit,
                 eventlimit=eventlimit,
-                sampling_rate=sampling_rate,
+                sample_rate=sample_rate,
             )
         )

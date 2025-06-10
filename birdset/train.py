@@ -76,8 +76,6 @@ def train(cfg):
         cfg.module.network.model["num_classes"] = (
             datamodule.num_classes
         )  # TODO not the correct classes when masking in valid/test only
-        # if cfg.module.network.model.get("classifier"):
-        # cfg.module.network.model.classifier["num_classes"] = datamodule.num_classes
 
     model = hydra.utils.instantiate(
         cfg.module,
@@ -117,11 +115,8 @@ def train(cfg):
         # check if ckpt_path is empty if so check if cfg.ckpt_path is set
 
         if ckpt_path == "":
-            if cfg.get("ckpt_path"):
-                ckpt_path = cfg.ckpt_path
-            else:
-                log.warning("No ckpt saved or found. Using current weights for testing")
-                ckpt_path = None
+            log.warning("No ckpt saved or found. Using current weights for testing")
+            ckpt_path = None
         else:
             log.info(
                 f"The best checkpoint for {cfg.callbacks.model_checkpoint.monitor}"
@@ -158,6 +153,4 @@ def train(cfg):
 
 
 if __name__ == "__main__":
-    # Set TensorFlow logging level
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     train()

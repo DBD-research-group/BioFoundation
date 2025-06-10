@@ -84,10 +84,10 @@ class FinetuneModule(BaseModule):
             pretrain_info=pretrain_info,
         )
         self.embedding_model = embedding_model.model
-        self.sampling_rate = embedding_model.sampling_rate
+        self.sample_rate = embedding_model.sample_rate
         self.max_length = embedding_model.length
         log.info(
-            f"FINETUNING using embedding model:{embedding_model.model_name} (Sampling Rate:{self.sampling_rate}, Window Size:{self.max_length})"
+            f"FINETUNING using embedding model:{embedding_model.model_name} (Sampling Rate:{self.sample_rate}, Window Size:{self.max_length})"
         )
 
     def configure_optimizers(self):

@@ -56,6 +56,14 @@ def pad_spectrogram_width(
     return padded_spectrogram
 
 
+def _choose_original_labels(target, background_target, snr):
+    return target
+
+
+def _make_union_labels(target, background_target, snr):
+    return torch.maximum(target, background_target)
+
+
 class RandomTimeStretch:
     def __init__(
         self,
@@ -307,12 +315,10 @@ class MultilabelMix(BaseWaveformTransform):
 
         self.mix_target = mix_target
         if mix_target == "original":
-            self._mix_target = lambda target, background_target, snr: target
+            self._mix_target = _choose_original_labels
 
         elif mix_target == "union":
-            self._mix_target = lambda target, background_target, snr: torch.maximum(
-                target, background_target
-            )
+            self._mix_target = _make_union_labels
         else:
             raise ValueError("mix_target must be one of 'original' or 'union'.")
 
@@ -453,15 +459,15 @@ class NoCallMixer:
         The directory containing the no-call data. The directory should contain audio files in a format that can be read by torchaudio (e.g. .wav).
     p : float
         The probability of a sample being replaced with a no-call sample. This parameter allows you to control the frequency of no-call samples in your dataset.
-    sampling_rate : int
-        The sampling rate at which the audio data should be processed. This parameter should align with the rest of your dataset and model configuration.
+    sample_rate : int
+        The sample rate at which the audio data should be processed. This parameter should align with the rest of your dataset and model configuration.
     length : int
         The length of the audio samples. This parameter should align with the rest of your dataset and model configuration.
     """
 
-    def __init__(self, directory, p, sampling_rate, length=5, *args, **kwargs):
+    def __init__(self, directory, p, sample_rate, length=5, *args, **kwargs):
         self.p = p
-        self.sampling_rate = sampling_rate
+        self.sample_rate = sample_rate
         self.length = length
 
         self.paths = self.get_all_file_paths(directory)
@@ -497,11 +503,11 @@ class NoCallMixer:
                 else:
                     audio, sr = sf.read(selected_path)
 
-                if sr != self.sampling_rate:
+                if sr != self.sample_rate:
                     audio = librosa.resample(
-                        audio, orig_sr=sr, target_sr=self.sampling_rate
+                        audio, orig_sr=sr, target_sr=self.sample_rate
                     )
-                    sr = self.sampling_rate
+                    sr = self.sample_rate
 
                 audio = torch.tensor(audio)
 
@@ -544,7 +550,7 @@ class Audio:
 
     Usage
     -----
-    >>> audio = Audio(sample_rate=16000)
+    >>> audio = Audio(sampling_rate=16000)
     >>> samples = audio("/path/to/audio.wav")
 
     # on-the-fly resampling
@@ -894,7 +900,9 @@ class AddBackgroundNoise(BaseWaveformTransform):
         batch_size, _, num_samples = samples.shape
 
         # (batch_size, num_samples) RMS-normalized background noise
-        audio = self.audio if hasattr(self, "audio") else Audio(sample_rate, mono=True)
+        audio = (
+            self.audio if hasattr(self, "audio") else Audio(sampling_rate, mono=True)
+        )
         self.transform_parameters["background"] = torch.stack(
             [self.random_background(audio, num_samples) for _ in range(batch_size)]
         )

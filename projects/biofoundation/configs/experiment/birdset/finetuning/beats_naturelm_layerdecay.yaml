@@ -1,0 +1,38 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - birdset/finetuning/finetuning_config.yaml 
+  - override /module/network: beats.yaml  
+
+module:
+  network:
+    model_name: BEATs_NatureLM
+    model:
+      checkpoint_path: '/workspace/models/beats/beats_naturelm.pt'
+  optimizer:
+    lr: 1e-4
+    weight_decay: 1e-4
+    extras:
+      layer_decay: 0.75
+      decay_type: 'right'
+      no_weight_decay_list: []
+
+datamodule:
+  dataset:
+    # dataset_name: 'POW'
+    # hf_name: 'POW'
+    use_test_as_valid: True
+  loaders:
+    train:
+      batch_size: 128
+
+callbacks:
+    early_stopping:
+    _target_: lightning.pytorch.callbacks.EarlyStopping
+    monitor: "val/BCEWithLogitsLoss_epoch"
+    patience: 10
+    mode: 'min'
+    min_delta: 1e-4
+    verbose: False
+    check_finite: True
+    

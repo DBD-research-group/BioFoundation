@@ -1,0 +1,15 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - audioset/finetuning_config.yaml 
+  - override /module/network: beats.yaml 
+
+datamodule:
+  debug: True
+
+module:
+  network:
+    model: 
+      checkpoint_path: "/workspace/models/beats/BEATs_iter3_plus_AS2M_finetuned_on_AS2M_cpt1.pt"
+  #output_activation: 
+    #_target_: "torch.nn.Identity"

@@ -13,7 +13,7 @@ model:
 model_name: biolingual
 model_type: waveform
 torch_compile: False
-sampling_rate: 48_000
+sample_rate: 48_000
 normalize_spectrogram: False
 normalize_waveform: False
 embedding_size: 512
