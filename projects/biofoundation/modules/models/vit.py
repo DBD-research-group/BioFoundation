@@ -5,7 +5,12 @@ import torch
 import torch.nn.functional as F
 from torchaudio.compliance import kaldi
 import torchaudio.transforms as T
-from biofoundation.modules.models.inat_utils import AudioToImageConverter
+from biofoundation.modules.models.inat_utils import (
+    _MEL_BREAK_FREQUENCY_HERTZ,
+    _MEL_HIGH_FREQUENCY_Q,
+    AudioToImageConverter,
+)
+
 
 class ViTModel(BirdSetModel):
     """
@@ -62,19 +67,19 @@ class ViTModel(BirdSetModel):
         )
 
         self.converter = AudioToImageConverter(
-                        freq_scale='mel',
-                        samplerate=22050,
-                        fft_length=1024,
-                        window_length_samples=256,
-                        hop_length_samples=32,
-                        mel_bands=128,
-                        mel_min_hz=50,
-                        mel_max_hz=8000,
-                        max_db_value=0.,
-                        min_db_value=-80.,
-                        target_height=224,
-                        target_width=224,
-)
+            freq_scale="mel",
+            samplerate=22050,
+            fft_length=1024,
+            window_length_samples=256,
+            hop_length_samples=32,
+            mel_bands=128,
+            mel_min_hz=50,
+            mel_max_hz=8000,
+            max_db_value=0.0,
+            min_db_value=-80.0,
+            target_height=224,
+            target_width=224,
+        )
 
     def load_model(self) -> None:
         self.model = models.vit_b_16(weights=None)
@@ -109,7 +114,7 @@ class ViTModel(BirdSetModel):
         input_values = input_values.detach().cpu().numpy()
         spec = self.converter._samples_to_magnitude_spectrogram(input_values)
 
-        if self.converter.freq_scale == 'mel':
+        if self.converter.freq_scale == "mel":
             spec = self.converter._mel_scale(spec)
 
         spec = self.converter._magnitude_to_db(spec)
@@ -120,7 +125,6 @@ class ViTModel(BirdSetModel):
         spec_tensor = torch.tensor(spec, dtype=torch.float32, device="cuda")
 
         return spec_tensor
-
 
     def preprocess3(self, input_values: torch.Tensor) -> torch.Tensor:
         mel_db = self.mel_spectrogram(input_values)
@@ -194,3 +198,47 @@ class ViTModel(BirdSetModel):
         # convert gray scale to 3 channels (RGB)
         melspecs = melspecs.repeat(1, 3, 1, 1)
         return melspecs
+
+    # REPLICATING iNAT CODE HERE
+
+    _MEL_BREAK_FREQUENCY_HERTZ = 700.0
+    _MEL_HIGH_FREQUENCY_Q = 1127.0
+
+    def preprocess5(self, input_values: torch.Tensor) -> torch.Tensor:
+        pass
+
+    def mel_to_hertz(mel_values: torch.Tensor) -> torch.Tensor:
+        """
+        Converts frequencies in mel_values from the mel scale to linear scale.
+
+        Args:
+            mel_values (torch.Tensor): Tensor of mel values. Can be on GPU.
+
+        Returns:
+            torch.Tensor: Corresponding linear frequency values.
+        """
+        return _MEL_BREAK_FREQUENCY_HERTZ * (
+            torch.exp(mel_values / _MEL_HIGH_FREQUENCY_Q) - 1.0
+        )
+
+    def hertz_to_mel(hertz_values: torch.Tensor) -> torch.Tensor:
+        """
+        Converts frequencies in hertz_values from linear scale to the mel scale.
+        Args:
+            hertz_values (torch.Tensor): Tensor of frequency values in hertz. Can be on GPU.
+        Returns:
+            torch.Tensor: Corresponding mel values.
+        """
+        return _MEL_HIGH_FREQUENCY_Q * torch.log(
+            1.0 + (hertz_values / _MEL_BREAK_FREQUENCY_HERTZ)
+        )
+
+    def mel_frequencies(self, n_mels=128, fmin=0.0, fmax=11025.0):
+
+        # 'Center freqs' of mel bands - uniformly spaced between limits
+        min_mel = self.hertz_to_mel(fmin)
+        max_mel = self.hertz_to_mel(fmax)
+
+        mels = torch.linspace(min_mel, max_mel, n_mels)
+
+        return self.mel_to_hertz(mels)
