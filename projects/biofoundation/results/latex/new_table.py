@@ -3,7 +3,7 @@ import numpy as np
 import os
 import sys
 
-
+import numpy
 # === Functions ===
 # Format row with LaTeX
 def format_values(values):
@@ -193,11 +193,11 @@ def birdset_table(models, model_names, path, path_beans):
     # === Top table part ===
     with open(output_path, "a") as f:
         f.write(
-            "\\renewcommand{\\arraystretch}{0.55} % Increase row height\n"
+            "\\renewcommand{\\arraystretch}{0.8} % Increase row height\n"
             "\\setlength{\\tabcolsep}{2pt}\n\n"
-            "\\begin{tabular}{p{0.55cm} p{1.4cm} | ccccc | c !{\\vrule width 1.3pt} cccccccc | c}\n"
+            "\\begin{tabular}{p{0.55cm} p{1.4cm} | ccccc | >{\centering\\arraybackslash}p{0.8cm} !{\\vrule width 1.3pt} cccccccc | >{\centering\\arraybackslash}p{0.8cm}}\n"
             "    \\toprule\n"
-            "    \\multicolumn{2}{c}{} & \\multicolumn{6}{c}{\\textbf{BEANS}} & \\multicolumn{9}{c}{\\textbf{BirdSet}}                                                                                                                                                                                                                                                                                                                                                                                  \\\\\n"
+            "    \\multicolumn{2}{c}{} & \\multicolumn{6}{c}{\\textbf{BEANS}} & \\multicolumn{9}{c}{\\makecell[c]{\\textbf{BirdSet} \\\\[-12pt] \\hspace{-5.6cm} {\\color{gray}\\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\\\\n"
             "    \\addlinespace[2pt]\n"
             "    \\cline{3-17} % Ensuring cline matches actual columns\n"
             "    \\addlinespace[2pt]\n\n"
@@ -245,21 +245,21 @@ def birdset_table(models, model_names, path, path_beans):
             cmap_ap.append(
                 ap_rows["Cmap"].max() if not ap_rows.empty else 0
             )
-        # Averages
+        # Averages without the second (1) column POW
         avg_cmap_lp = (
-            round(np.mean([x for x in cmap_lp if x > 0]), 1)
-            if any(x > 0 for x in cmap_lp)
+            round(np.mean([x for i, x in enumerate(cmap_lp) if x > 0 and i != 1]), 1)
+            if any(x > 0 and i != 1 for i, x in enumerate(cmap_lp))
             else 0
         )
         avg_cmap_ft = (
-            round(np.mean([x for x in cmap_ft if x > 0]), 1)
-            if any(x > 0 for x in cmap_ft)
+            round(np.mean([x for i, x in enumerate(cmap_ft) if x > 0 and i != 1]), 1)
+            if any(x > 0 and i != 1 for i, x in enumerate(cmap_ft))
             else 0
         )
 
         avg_cmap_ap = (
-            round(np.mean([x for x in cmap_ap if x > 0]), 1)
-            if any(x > 0 for x in cmap_ap)
+            round(np.mean([x for i, x in enumerate(cmap_ap) if x > 0 and i != 1]), 1)
+            if any(x > 0 and i != 1 for i, x in enumerate(cmap_ap))
             else 0
         )
 
@@ -292,19 +292,19 @@ def birdset_table(models, model_names, path, path_beans):
             f.write(
                 f"\\multirow{{3}}{{*}}{{\\textbf{{{format_name(model_names[i])}}}}} & {{Linear}} & "
                 + " & ".join(all_top1_lp_beans[i]) + f" & {all_avg_top1_lp_beans[i]} &"
-                + " & ".join(all_cmap_lp[i]) + f" & {all_avg_cmap_lp[i]} \\\\ [0.2em]\n"
+                + " & ".join(all_cmap_lp[i]) + f" & {all_avg_cmap_lp[i]} \\\\ \n"
             )
 
             f.write(
                 f" & {{Attentive}} & "
                 + " & ".join(all_top1_ap_beans[i]) + f" & {all_avg_top1_ap_beans[i]} &"
-                + " & ".join(all_cmap_ap[i]) + f" & {all_avg_cmap_ap[i]} \\\\ [0.1em]\n"
+                + " & ".join(all_cmap_ap[i]) + f" & {all_avg_cmap_ap[i]} \\\\ \n"
             )
 
             f.write(
                 f" & {{Finetuned}} & "
                 + " & ".join(all_top1_ft_beans[i]) + f" & {all_avg_top1_ft_beans[i]} &"
-                + " & ".join(all_cmap_ft[i]) + f" & {all_avg_cmap_ft[i]} \\\\ [0.1em]\n"
+                + " & ".join(all_cmap_ft[i]) + f" & {all_avg_cmap_ft[i]} \\\\ \n"
             )
 
             if model != models[-1]:
