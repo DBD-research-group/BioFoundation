@@ -4,6 +4,8 @@ import os
 import sys
 
 import numpy
+
+
 # === Functions ===
 # Format row with LaTeX
 def format_values(values):
@@ -146,8 +148,14 @@ def beans_table(path, models):
     all_avg_top1_ft = format_hm(all_avg_top1_ft, "red")
     all_avg_top1_ap = format_hm(all_avg_top1_ap, "blue")
 
-    return all_top1_lp, all_top1_ft, all_top1_ap, all_avg_top1_lp, all_avg_top1_ft, all_avg_top1_ap
-
+    return (
+        all_top1_lp,
+        all_top1_ft,
+        all_top1_ap,
+        all_avg_top1_lp,
+        all_avg_top1_ft,
+        all_avg_top1_ap,
+    )
 
 
 # === BirdSet ===
@@ -236,9 +244,7 @@ def birdset_table(models, model_names, path, path_beans):
             cmap_ft.append(
                 ft_rows["Cmap"].max() if not ft_rows.empty else 0
             )  # Max value for FT Cmap
-            cmap_ap.append(
-                ap_rows["Cmap"].max() if not ap_rows.empty else 0
-            )
+            cmap_ap.append(ap_rows["Cmap"].max() if not ap_rows.empty else 0)
         # Averages without the first (0th) column POW
         avg_cmap_lp = (
             round(np.mean([x for i, x in enumerate(cmap_lp) if x > 0 and i != 0]), 1)
@@ -276,8 +282,15 @@ def birdset_table(models, model_names, path, path_beans):
     all_avg_cmap_ap = format_hm(all_avg_cmap_ap, "blue")
 
     # Get BEANS results and unpack lists, adding _beans to the end of each variable name
-    
-    all_top1_lp_beans, all_top1_ft_beans, all_top1_ap_beans, all_avg_top1_lp_beans, all_avg_top1_ft_beans, all_avg_top1_ap_beans = beans_table(path_beans, models)
+
+    (
+        all_top1_lp_beans,
+        all_top1_ft_beans,
+        all_top1_ap_beans,
+        all_avg_top1_lp_beans,
+        all_avg_top1_ft_beans,
+        all_avg_top1_ap_beans,
+    ) = beans_table(path_beans, models)
 
     with open(output_path, "a") as f:
         for i, model in enumerate(models):
@@ -285,20 +298,26 @@ def birdset_table(models, model_names, path, path_beans):
             # Write LaTeX to a file
             f.write(
                 f"\\multirow{{3}}{{*}}{{\\textbf{{{format_name(model_names[i])}}}}} & {{Linear}} & "
-                + " & ".join(all_top1_lp_beans[i]) + f" & {all_avg_top1_lp_beans[i]} &"
-                + " & ".join(all_cmap_lp[i]) + f" & {all_avg_cmap_lp[i]} \\\\ \n"
+                + " & ".join(all_top1_lp_beans[i])
+                + f" & {all_avg_top1_lp_beans[i]} &"
+                + " & ".join(all_cmap_lp[i])
+                + f" & {all_avg_cmap_lp[i]} \\\\ \n"
             )
 
             f.write(
                 f" & {{Attentive}} & "
-                + " & ".join(all_top1_ap_beans[i]) + f" & {all_avg_top1_ap_beans[i]} &"
-                + " & ".join(all_cmap_ap[i]) + f" & {all_avg_cmap_ap[i]} \\\\ \n"
+                + " & ".join(all_top1_ap_beans[i])
+                + f" & {all_avg_top1_ap_beans[i]} &"
+                + " & ".join(all_cmap_ap[i])
+                + f" & {all_avg_cmap_ap[i]} \\\\ \n"
             )
 
             f.write(
                 f" & {{Finetuned}} & "
-                + " & ".join(all_top1_ft_beans[i]) + f" & {all_avg_top1_ft_beans[i]} &"
-                + " & ".join(all_cmap_ft[i]) + f" & {all_avg_cmap_ft[i]} \\\\ \n"
+                + " & ".join(all_top1_ft_beans[i])
+                + f" & {all_avg_top1_ft_beans[i]} &"
+                + " & ".join(all_cmap_ft[i])
+                + f" & {all_avg_cmap_ft[i]} \\\\ \n"
             )
 
             if model != models[-1]:
@@ -313,8 +332,36 @@ def birdset_table(models, model_names, path, path_beans):
 # === Script ===
 print(f"Creating Latex table...")
 # Settings:
-MODELS = ["audio_mae", "aves", "BEATs", "biolingual", "bird_aves", "bird_mae", "convnext_bs", "eat_ssl", "BEATs_NatureLM", "perch", "proto_clr", "surfperch", "vit_ins"] # Extract these names from the CSV file
-MODEL_NAMES = ["Audio-MAE", "AVES", "BEATs", "Bioli-ngual", "Bird-AVES", "Bird-MAE", "Conv-Next$_{BS}$", "EAT-SSL", "BEATs-NLM", "Perch", "Proto-CLR", "Surf-Perch", "ViT-INS"] # These names will appear in the table split at "-" ordered the same as MODELS
+MODELS = [
+    "audio_mae",
+    "aves",
+    "BEATs",
+    "biolingual",
+    "bird_aves",
+    "bird_mae",
+    "convnext_bs",
+    "eat_ssl",
+    "BEATs_NatureLM",
+    "perch",
+    "proto_clr",
+    "surfperch",
+    "vit_ins",
+]  # Extract these names from the CSV file
+MODEL_NAMES = [
+    "Audio-MAE",
+    "AVES",
+    "BEATs",
+    "Bioli-ngual",
+    "Bird-AVES",
+    "Bird-MAE",
+    "Conv-Next$_{BS}$",
+    "EAT-SSL",
+    "BEATs-NLM",
+    "Perch",
+    "Proto-CLR",
+    "Surf-Perch",
+    "ViT-INS",
+]  # These names will appear in the table split at "-" ordered the same as MODELS
 CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
 
