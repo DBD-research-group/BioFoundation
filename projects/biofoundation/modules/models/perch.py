@@ -48,7 +48,7 @@ class PerchModel(BioFoundationModel):
         local_checkpoint: str = None,
         freeze_backbone: bool = True,  # Finetuning Perch is not supported
         preprocess_in_model: bool = True,
-        classifier: nn.Module | None = None
+        classifier: nn.Module | None = None,
     ) -> None:
         """
         Initializes the PerchModel with configuration for loading the TensorFlow Hub model,
@@ -77,16 +77,13 @@ class PerchModel(BioFoundationModel):
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
             pretrain_info=pretrain_info,
-            pooling=None
+            pooling=None,
         )
         self.use_internal_classifier = False
         if classifier is None:
             self.use_internal_classifier = True
         else:
             self.classifier = classifier
-
-
-            
 
     def _load_model(self) -> None:
         """
@@ -131,7 +128,7 @@ class PerchModel(BioFoundationModel):
             dataset_classlabels = dataset_info.features["ebird_code"].names
 
             # Create the class mask
-            self.class_mask = [ 
+            self.class_mask = [
                 pretrain_classlabels.index(label)
                 for label in dataset_classlabels
                 if label in pretrain_classlabels
