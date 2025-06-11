@@ -10,6 +10,7 @@ from transformers import AutoModel
 
 from birdset.configs.model_configs import PretrainInfoConfig
 
+
 class EATPreprocessor(nn.Module):
     MEAN = torch.tensor(-4.268)
     STD = torch.tensor(4.569)

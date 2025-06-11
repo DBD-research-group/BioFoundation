@@ -93,8 +93,6 @@ class AudioMAEModel(ViT):
 
         self.preprocessor = KaldiLikeMelSpec()
 
-
-
     def _load_model(self) -> None:
         """
         Load the model from Huggingface.

@@ -55,7 +55,7 @@ class BioFoundationModel(nn.Module):
         self.preprocessor = None
 
         self.model = self._load_model()
-        
+
         if local_checkpoint:
             self._load_local_checkpoint()
         if self.preprocess_in_model:
