@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Literal
 
 import datasets
 import pandas as pd
@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from birdset.configs import PretrainInfoConfig
-
+from biofoundation.modules.models.Pooling import AttentivePooling, AveragePooling
 from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
@@ -32,13 +32,14 @@ class PerchModel(BioFoundationModel):
     """
 
     # Constants for the model URL and embedding size
-    PERCH_TF_HUB_URL = "https://tfhub.dev/google/bird-vocalization-classifier"
+    PERCH_TF_HUB_URL = "https://www.kaggle.com/models/google/bird-vocalization-classifier/TensorFlow2/bird-vocalization-classifier"
     EMBEDDING_SIZE = 1280
 
     def __init__(
         self,
         num_classes: int,
         tfhub_version: str,
+        checkpoint_path: str = PERCH_TF_HUB_URL,
         restrict_logits: bool = False,
         label_path: Optional[str] = None,
         pretrain_info: Optional[PretrainInfoConfig] = None,
@@ -47,7 +48,7 @@ class PerchModel(BioFoundationModel):
         local_checkpoint: str = None,
         freeze_backbone: bool = True,  # Finetuning Perch is not supported
         preprocess_in_model: bool = True,
-        classifier: nn.Module | None = None,
+        classifier: nn.Module | None = None
     ) -> None:
         """
         Initializes the PerchModel with configuration for loading the TensorFlow Hub model,
@@ -62,48 +63,37 @@ class PerchModel(BioFoundationModel):
             pretrain_info: A dictionary containing information about the pretraining of the model.
             gpu_to_use: The GPU index to use for the model.
         """
+        self.tfhub_version = tfhub_version
+        self.checkpoint_path = checkpoint_path
+        self.gpu_to_use = gpu_to_use
+        self.restrict_logits = restrict_logits
+        self.class_mask = None
+        self.class_indices = None
+        self.label_path = label_path
         super().__init__(
             num_classes=num_classes,
-            embedding_size=embedding_size,
             local_checkpoint=local_checkpoint,
+            embedding_size=embedding_size,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
+            pretrain_info=pretrain_info,
+            pooling=None
         )
         self.use_internal_classifier = False
         if classifier is None:
             self.use_internal_classifier = True
         else:
             self.classifier = classifier
-        self.model = None  # Placeholder for the loaded model
-        self.class_mask = None
-        self.class_indices = None
 
-        self.num_classes = num_classes
-        self.tfhub_version = tfhub_version
-        self.restrict_logits = restrict_logits
-        self.label_path = label_path
-        self.gpu_to_use = gpu_to_use
 
-        if pretrain_info:
-            self.hf_path = pretrain_info.hf_path
-            self.hf_name = pretrain_info.hf_name
-        else:
-            self.hf_path = None
-            self.hf_name = None
+            
 
-        # Define a linear classifier to use on top of the embeddings
-        # self.classifier = nn.Linear(
-        #     in_features=self.EMBEDDING_SIZE, out_features=num_classes
-        # )
-
-        self.load_model()
-
-    def load_model(self) -> None:
+    def _load_model(self) -> None:
         """
         Load the model from TensorFlow Hub.
         """
 
-        model_url = f"{self.PERCH_TF_HUB_URL}/{self.tfhub_version}"
+        model_url = f"{self.checkpoint_path}/{self.tfhub_version}"
         # self.model = hub.load(model_url)
         # with tf.device('/CPU:0'):
         # self.model = hub.load(model_url)
@@ -122,8 +112,12 @@ class PerchModel(BioFoundationModel):
             tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
         tf.config.optimizer.set_jit(True)
-        self.model = hub.load(model_url)
+        model = hub.load(model_url)
+        print(model.signatures.keys())  # usually ['serving_default']
 
+        # Try to print the output structure
+        output = model.signatures["serving_default"]
+        print(output.structured_outputs)
         if self.restrict_logits:
             # Load the class list from the CSV file
             pretrain_classlabels = pd.read_csv(self.label_path)
@@ -137,7 +131,7 @@ class PerchModel(BioFoundationModel):
             dataset_classlabels = dataset_info.features["ebird_code"].names
 
             # Create the class mask
-            self.class_mask = [
+            self.class_mask = [ 
                 pretrain_classlabels.index(label)
                 for label in dataset_classlabels
                 if label in pretrain_classlabels
@@ -156,6 +150,7 @@ class PerchModel(BioFoundationModel):
             ]
             if missing_labels:
                 logging.warning(f"Missing labels in pretrained model: {missing_labels}")
+        return model
 
     @tf.function  # Decorate with tf.function to compile into a callable TensorFlow graph
     def run_tf_model(self, input_tensor: tf.Tensor) -> dict:
@@ -170,6 +165,12 @@ class PerchModel(BioFoundationModel):
         """
 
         return self.model.signatures["serving_default"](inputs=input_tensor)
+
+    def freeze_model_backbone(self):
+        """
+        No Freezing needed for Perch model as it is not trainable.
+        """
+        pass
 
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
@@ -217,7 +218,7 @@ class PerchModel(BioFoundationModel):
         outputs = self.run_tf_model(input_tensor=input_tensor)
 
         # Extract logits, convert them to PyTorch tensors
-        logits = torch.from_numpy(outputs["output_0"].numpy())
+        logits = torch.from_numpy(outputs["label"].numpy())
         logits = logits.to(device)
 
         if self.class_mask:
@@ -253,9 +254,8 @@ class PerchModel(BioFoundationModel):
 
         # Run the model and get the outputs using the optimized TensorFlow function
         outputs = self.run_tf_model(input_tensor=input_tensor)
-
         # Extract embeddings and logits, convert them to PyTorch tensors
-        embeddings = torch.from_numpy(outputs["output_1"].numpy())
+        embeddings = torch.from_numpy(outputs["embedding"].numpy())
         embeddings = embeddings.to(device)
 
         return embeddings
