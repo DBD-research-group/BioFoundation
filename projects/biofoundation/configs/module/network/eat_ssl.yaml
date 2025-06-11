@@ -3,6 +3,7 @@ model:
   # checkpoint_path: ${paths.root_dir}/models/eat_ssl/EAT-base_epoch30_ft.pt
   checkpoint_path: worstchan/EAT-base_epoch30_finetune_AS2M
   local_checkpoint: null
+  pooling: just_cls
   # modality:
   #   prenet_depth: 0
   #   prenet_layerdrop: 0

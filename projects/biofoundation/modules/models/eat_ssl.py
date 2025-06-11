@@ -1,13 +1,54 @@
-from typing import Optional
+from typing import Literal, Optional
 from biofoundation.modules.models.vit import ViT
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torchaudio.compliance import kaldi
+import torchaudio
 
 
 from transformers import AutoModel
 
+from birdset.configs.model_configs import PretrainInfoConfig
+
+class EATPreprocessor(nn.Module):
+    MEAN = torch.tensor(-4.268)
+    STD = torch.tensor(4.569)
+
+    def __init__(self, target_frames: int = 1024):
+        super().__init__()
+        self.target_frames = target_frames
+        self.preemphasis = torchaudio.functional.preemphasis
+        self.melspec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=16000,
+            n_fft=512,
+            win_length=400,
+            hop_length=160,
+            window_fn=torch.hann_window,
+            n_mels=128,
+            f_min=20.0,
+            f_max=8000.0,
+            power=2.0,  # Kaldi default is power
+            norm=None,
+            mel_scale="htk",
+        )
+        # Use log-mel, not dB, for exact Kaldi parity
+
+    def forward(self, x):
+        # Remove DC offset
+        x = x - x.mean(dim=-1, keepdim=True)
+        # Pre-emphasis
+        x = torchaudio.functional.preemphasis(x, coeff=0.97)
+        melspecs = self.melspec(x)
+        melspecs = torch.log(melspecs + 1e-6)
+        n_frames = melspecs.shape[-1]
+        if n_frames < self.target_frames:
+            pad_amt = self.target_frames - n_frames
+            melspecs = F.pad(melspecs, (0, pad_amt), mode="constant", value=0)
+        else:
+            melspec = melspec[..., : self.target_frames]
+        melspecs = melspecs.permute(0, 1, 3, 2)  # (batch, 1, 128, 1024)
+        melspecs = (melspecs - self.MEAN) / (self.STD * 2)
+        return melspecs
 
 
 class EATSSL(ViT):
@@ -45,7 +86,9 @@ class EATSSL(ViT):
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
-        classifier: nn.Module | None = None,
+        classifier: nn.Module = None,
+        pretrain_info: PretrainInfoConfig = None,
+        pooling: Literal["just_cls", "attentive", "average"] = "just_cls",
     ) -> None:
         self.model = None  # Placeholder for the loaded model
         self.checkpoint_path = checkpoint_path
@@ -56,6 +99,9 @@ class EATSSL(ViT):
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
+            pretrain_info=pretrain_info,
+            pooling=pooling,
+            classifier=classifier,
         )
 
     def _load_model(self) -> None:
@@ -64,40 +110,12 @@ class EATSSL(ViT):
         """
         return AutoModel.from_pretrained(self.checkpoint_path, trust_remote_code=True)
 
-
-    def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+    def _load_preprocessor(self) -> nn.Module:
         """
-        Preprocesses the input values by applying mel-filterbank transformation. Similar as function for AudioMae, ConvNeXt and SSAST.
-        Args:
-            input_values (torch.Tensor): Input tensor of shape (batch_size, num_samples).
-        Returns:
-            torch.Tensor: Preprocessed tensor of shape (batch_size, 1, num_mel_bins, num_frames).
+        Load the preprocessor for the model.
+        This is a Kaldi-like Mel spectrogram extractor.
         """
-        device = input_values.device
-        melspecs = []
-        for waveform in input_values:
-            waveform = waveform - waveform.mean()
-            melspec = kaldi.fbank(
-                waveform,
-                htk_compat=True,
-                sample_frequency=16000,
-                use_energy=False,
-                window_type='hanning',
-                num_mel_bins=128,
-                dither=0.0,
-                frame_shift=10
-            ).unsqueeze(0)
-            # Pad or truncate
-            n_frames = melspec.shape[1]
-            if n_frames < 1024:
-                melspec = torch.nn.ZeroPad2d((0, 0, 0, 1024 - n_frames))(melspec)
-            else:
-                melspec = melspec[:, :1024, :]
-            melspecs.append(melspec)
-        melspecs = torch.stack(melspecs).to(device)
-
-        melspecs = (melspecs - self.MEAN) / (self.STD * 2)
-        return melspecs
+        return EATPreprocessor()
 
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
