@@ -3,34 +3,34 @@
 
 \begin{tabular}{>{\centering\arraybackslash}p{0.7cm} p{1.5cm} | ccccc | >{\centering\arraybackslash}p{0.8cm} !{\vrule width 1.3pt} cccccccc | >{\centering\arraybackslash}p{0.8cm}}
     \toprule
-    \multicolumn{2}{c}{} & \multicolumn{6}{c}{\textbf{BEANS}} & \multicolumn{9}{c}{\makecell[c]{\textbf{BirdSet} \\[-12pt] \hspace{-5.6cm} {\color{gray}\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\
+    \multicolumn{2}{c}{} & \multicolumn{6}{c}{\textbf{BEANS}} & \multicolumn{9}{c}{\makecell[c]{\textbf{BirdSet} \\[-12pt] \hspace{-7.5cm} {\color{gray}\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\
     \addlinespace[2pt]
     \cline{3-17} % Ensuring cline matches actual columns
     \addlinespace[2pt]
 
-    \multicolumn{2}{c}{} & \cellcolor{gray!25}\textbf{\textsc{WTK}}   & \cellcolor{gray!25}\textbf{\textsc{BAT}} & \cellcolor{gray!25}\textbf{\textsc{CBI}} & \cellcolor{gray!25}\textbf{\textsc{DOG}} & \cellcolor{gray!25}\textbf{\textsc{HUM}} & \cellcolor{gray!25}\textbf{\underline{Score}}                         & \cellcolor{gray!25}\textbf{\textsc{PER}}   & \cellcolor{gray!25}\textbf{\textsc{POW}} & \cellcolor{gray!25}\textbf{\textsc{NES}} & \cellcolor{gray!25}\textbf{\textsc{UHH}} & \cellcolor{gray!25}\textbf{\textsc{HSN}} & \cellcolor{gray!25}\textbf{\textsc{NBP}}   & \cellcolor{gray!25}\textbf{\textsc{SSW}} & \cellcolor{gray!25}\textbf{\textsc{SNE}} & \cellcolor{gray!25}\textbf{\underline{Score}}                                                                         \\
+    \multicolumn{2}{c}{} & \cellcolor{gray!25}\textbf{\textsc{WTK}}   & \cellcolor{gray!25}\textbf{\textsc{BAT}} & \cellcolor{gray!25}\textbf{\textsc{CBI}} & \cellcolor{gray!25}\textbf{\textsc{DOG}} & \cellcolor{gray!25}\textbf{\textsc{HUM}} & \cellcolor{gray!25}\textbf{\underline{Score}}                         & \cellcolor{gray!25}\textbf{\textsc{POW}}   & \cellcolor{gray!25}\textbf{\textsc{PER}} & \cellcolor{gray!25}\textbf{\textsc{NES}} & \cellcolor{gray!25}\textbf{\textsc{UHH}} & \cellcolor{gray!25}\textbf{\textsc{HSN}} & \cellcolor{gray!25}\textbf{\textsc{NBP}}   & \cellcolor{gray!25}\textbf{\textsc{SSW}} & \cellcolor{gray!25}\textbf{\textsc{SNE}} & \cellcolor{gray!25}\textbf{\underline{Score}}                                                                         \\
     \addlinespace[2pt]
     \cline{3-17} % Adjusting cline to match new column numbers
     \addlinespace[2pt]
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}Audio \\ MAE\end{tabular}}
-}} & {Linear} & 20.1 & 28.7 & 7.4 & 23.0 & 72.2 & \heatgreen{30.3} &- & 9.1 & 1.4 & 5.1 & 6.3 & 9.2 & 2.1 & 4.0 & \heatgreen{4.7} \\ 
- & {Attentive} & - & - & - & - & - & - &\textbf{0.0} & - & - & - & - & - & - & \textbf{0.0} & - \\ 
- & {Finetuned} & 89.4 & 71.1 & 59.9 & 80.6 & 81.9 & \heatred{76.6} &\textbf{0.0} & - & 26.6 & 16.8 & 39.3 & 46.3 & \underline{24.3} & \underline{19.1} & \heatred{28.7} \\ 
+}} & {Linear} & 20.1 & 28.7 & 7.4 & 23.0 & 72.2 & \heatgreen{30.3} &9.1 & - & 1.4 & 5.1 & 6.3 & 9.2 & 2.1 & 4.0 & \heatgreen{4.7} \\ 
+ & {Attentive} & - & - & - & - & - & - &- & \textbf{0.0} & - & - & - & - & - & \textbf{0.0} & - \\ 
+ & {Finetuned} & 89.4 & 71.1 & 59.9 & 80.6 & 81.9 & \heatred{76.6} &- & \textbf{0.0} & 26.6 & 16.8 & 39.3 & 46.3 & \underline{24.3} & \underline{19.1} & \heatred{28.7} \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{AVES}
-}} & {Linear} & 61.7 & 36.1 & 6.3 & 56.8 & 72.1 & \heatgreen{46.6} &- & 8.6 & 2.1 & 7.6 & 3.5 & 9.4 & 1.6 & 5.1 & \heatgreen{4.9} \\ 
+}} & {Linear} & 61.7 & 36.1 & 6.3 & 56.8 & 72.1 & \heatgreen{46.6} &8.6 & - & 2.1 & 7.6 & 3.5 & 9.4 & 1.6 & 5.1 & \heatgreen{4.9} \\ 
  & {Attentive} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
- & {Finetuned} & 81.7 & 72.8 & 60.1 & \underline{95.7} & 79.2 & \heatred{77.9} &- & 17.5 & 16.1 & 11.6 & 31.1 & 29.6 & 8.9 & 12.3 & \heatred{18.3} \\ 
+ & {Finetuned} & 81.7 & 72.8 & 60.1 & \underline{95.7} & 79.2 & \heatred{77.9} &17.5 & - & 16.1 & 11.6 & 31.1 & 29.6 & 8.9 & 12.3 & \heatred{18.3} \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{BEATs}
-}} & {Linear} & \underline{83.2} & \underline{59.5} & 19.9 & 80.6 & \underline{78.1} & \heatgreen{64.3} &- & 11.7 & 5.4 & 9.4 & 13.3 & 17.9 & 4.4 & 10.1 & \heatgreen{10.1} \\ 
+}} & {Linear} & \underline{83.2} & \underline{59.5} & 19.9 & 80.6 & \underline{78.1} & \heatgreen{64.3} &11.7 & - & 5.4 & 9.4 & 13.3 & 17.9 & 4.4 & 10.1 & \heatgreen{10.1} \\ 
  & {Attentive} & \underline{86.4} & \underline{75.4} & \underline{52.5} & \underline{95.7} & \textbf{82.6} & \heatblue[underline]{78.5} &- & - & - & - & - & - & - & - & - \\ 
- & {Finetuned} & \underline{91.7} & \textbf{75.2} & \underline{67.1} & 95.7 & \textbf{84.3} & \heatred[bold]{82.8} &- & \underline{27.3} & \underline{26.9} & \underline{22.2} & \underline{43.6} & \underline{53.1} & - & \textbf{26.7} & \heatred[underline]{34.5} \\ 
+ & {Finetuned} & \underline{91.7} & \textbf{75.2} & \underline{67.1} & 95.7 & \textbf{84.3} & \heatred[bold]{82.8} &\underline{27.3} & - & \underline{26.9} & \underline{22.2} & \underline{43.6} & \underline{53.1} & - & \textbf{26.7} & \heatred[underline]{34.5} \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}Bioli \\ ngual\end{tabular}}
 }} & {Linear} & 77.9 & 53.5 & 18.6 & 66.9 & 75.7 & \heatgreen{58.5} &- & - & - & - & 11.5 & - & - & 9.8 & \heatgreen{10.7} \\ 
  & {Attentive} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
- & {Finetuned} & 91.7 & \underline{74.2} & 64.3 & 93.5 & 81.3 & \heatred{81.0} &- & 18.4 & - & 15.0 & 33.2 & 46.6 & 0.5 & - & \heatred{23.8} \\ 
+ & {Finetuned} & 91.7 & \underline{74.2} & 64.3 & 93.5 & 81.3 & \heatred{81.0} &18.4 & - & - & 15.0 & 33.2 & 46.6 & 0.5 & - & \heatred{23.8} \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}Bird \\ AVES\end{tabular}}
 }} & {Linear} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
@@ -43,22 +43,22 @@
  & {Finetuned} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}Conv \\ Next$_{BS}$\end{tabular}}
-}} & {Linear} & 71.7 & 41.8 & 37.7 & 67.6 & 34.5 & \heatgreen{50.7} &- & 18.4 & 10.4 & 10.4 & \textbf{30.9} & 22.1 & 3.9 & 8.2 & \heatgreen{14.3} \\ 
+}} & {Linear} & 71.7 & 41.8 & 37.7 & 67.6 & 34.5 & \heatgreen{50.7} &18.4 & - & 10.4 & 10.4 & \textbf{30.9} & 22.1 & 3.9 & 8.2 & \heatgreen{14.3} \\ 
  & {Attentive} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
- & {Finetuned} & 90.6 & 68.4 & \textbf{78.4} & 88.5 & \underline{82.9} & \heatred[underline]{81.8} &- & \textbf{38.8} & \textbf{37.8} & \textbf{24.9} & \textbf{51.0} & \textbf{67.4} & \textbf{37.9} & - & \heatred[bold]{43.8} \\ 
+ & {Finetuned} & 90.6 & 68.4 & \textbf{78.4} & 88.5 & \underline{82.9} & \heatred[underline]{81.8} &\textbf{38.8} & - & \textbf{37.8} & \textbf{24.9} & \textbf{51.0} & \textbf{67.4} & \textbf{37.9} & - & \heatred[bold]{43.8} \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}EAT \\ SSL\end{tabular}}
-}} & {Linear} & 67.6 & 46.5 & 29.6 & 74.1 & 72.0 & \heatgreen{58.0} &- & 15.7 & 11.5 & \underline{14.4} & 17.9 & 27.4 & 7.2 & \underline{11.1} & \heatgreen{14.9} \\ 
+}} & {Linear} & 67.6 & 46.5 & 29.6 & 74.1 & 72.0 & \heatgreen{58.0} &15.7 & - & 11.5 & \underline{14.4} & 17.9 & 27.4 & 7.2 & \underline{11.1} & \heatgreen{14.9} \\ 
  & {Attentive} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
  & {Finetuned} & 83.5 & 71.6 & 64.8 & 94.2 & 80.1 & \heatred{78.8} &- & - & 13.0 & 12.0 & 12.3 & 28.9 & 10.1 & 8.3 & \heatred{14.1} \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}BEATs \\ NLM\end{tabular}}
-}} & {Linear} & \textbf{91.2} & \textbf{76.2} & \underline{74.6} & \textbf{95.7} & \textbf{82.3} & \heatgreen[bold]{84.0} &\textbf{3.8} & \underline{23.7} & \underline{15.1} & 13.0 & \underline{28.4} & \textbf{40.3} & \underline{11.6} & - & \heatgreen[underline]{18.7} \\ 
- & {Attentive} & \textbf{91.2} & \textbf{76.2} & \textbf{74.6} & 95.7 & \underline{82.3} & \heatblue[bold]{84.0} &- & \textbf{51.0} & \textbf{33.7} & \textbf{26.8} & \textbf{51.3} & \textbf{58.0} & \textbf{41.1} & - & \heatblue[bold]{42.2} \\ 
+}} & {Linear} & \textbf{91.2} & \textbf{76.2} & \underline{74.6} & \textbf{95.7} & \textbf{82.3} & \heatgreen[bold]{84.0} &\underline{23.7} & \textbf{3.8} & \underline{15.1} & 13.0 & \underline{28.4} & \textbf{40.3} & \underline{11.6} & - & \heatgreen[underline]{18.7} \\ 
+ & {Attentive} & \textbf{91.2} & \textbf{76.2} & \textbf{74.6} & 95.7 & \underline{82.3} & \heatblue[bold]{84.0} &\textbf{51.0} & - & \textbf{33.7} & \textbf{26.8} & \textbf{51.3} & \textbf{58.0} & \textbf{41.1} & - & \heatblue[bold]{42.2} \\ 
  & {Finetuned} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{Perch}
-}} & {Linear} & 82.9 & 53.6 & \textbf{78.6} & \underline{92.8} & 72.4 & \heatgreen[underline]{76.1} &- & \textbf{31.9} & \textbf{33.6} & \textbf{20.6} & 21.4 & \underline{40.0} & \textbf{21.2} & \textbf{19.1} & \heatgreen[bold]{26.0} \\ 
+}} & {Linear} & 82.9 & 53.6 & \textbf{78.6} & \underline{92.8} & 72.4 & \heatgreen[underline]{76.1} &\textbf{31.9} & - & \textbf{33.6} & \textbf{20.6} & 21.4 & \underline{40.0} & \textbf{21.2} & \textbf{19.1} & \heatgreen[bold]{26.0} \\ 
  & {Attentive} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
  & {Finetuned} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
 \hline 
@@ -69,12 +69,12 @@
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}Surf \\ Perch\end{tabular}}
 }} & {Linear} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
- & {Attentive} & - & - & - & - & - & - &\underline{0.0} & - & - & - & - & - & - & \underline{0.0} & - \\ 
- & {Finetuned} & - & - & - & - & - & - &\underline{0.0} & - & - & - & - & - & - & - & - \\ 
+ & {Attentive} & - & - & - & - & - & - &- & \underline{0.0} & - & - & - & - & - & \underline{0.0} & - \\ 
+ & {Finetuned} & - & - & - & - & - & - &- & \underline{0.0} & - & - & - & - & - & - & - \\ 
 \hline 
 \multirow{3}{*}{\textbf{\rotatebox[origin=c]{90}{\begin{tabular}{@{}c@{}}ViT \\ INS\end{tabular}}
-}} & {Linear} & - & - & - & - & - & - &\underline{0.0} & - & - & - & - & - & - & - & - \\ 
- & {Attentive} & - & - & - & - & - & - &- & \underline{0.0} & \underline{0.0} & \underline{0.0} & \underline{0.0} & \underline{0.0} & \underline{0.0} & - & \heatblue[underline]{0.0} \\ 
+}} & {Linear} & - & - & - & - & - & - &- & \underline{0.0} & - & - & - & - & - & - & - \\ 
+ & {Attentive} & - & - & - & - & - & - &\underline{0.0} & - & \underline{0.0} & \underline{0.0} & \underline{0.0} & \underline{0.0} & \underline{0.0} & - & \heatblue[underline]{0.0} \\ 
  & {Finetuned} & - & - & - & - & - & - &- & - & - & - & - & - & - & - & - \\ 
     \bottomrule
 \end{tabular}

@@ -169,8 +169,8 @@ def birdset_table(models, model_names, path, path_beans):
     df["Cmap"] *= 100
 
     datasets = [
-        "PER",
         "POW",
+        "PER",
         "NES",
         "UHH",
         "HSN",
@@ -191,12 +191,12 @@ def birdset_table(models, model_names, path, path_beans):
             "\\setlength{\\tabcolsep}{2pt}\n\n"
             "\\begin{tabular}{>{\\centering\\arraybackslash}p{0.7cm} p{1.5cm} | ccccc | >{\centering\\arraybackslash}p{0.8cm} !{\\vrule width 1.3pt} cccccccc | >{\centering\\arraybackslash}p{0.8cm}}\n"
             "    \\toprule\n"
-            "    \\multicolumn{2}{c}{} & \\multicolumn{6}{c}{\\textbf{BEANS}} & \\multicolumn{9}{c}{\\makecell[c]{\\textbf{BirdSet} \\\\[-12pt] \\hspace{-5.6cm} {\\color{gray}\\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\\\\n"
+            "    \\multicolumn{2}{c}{} & \\multicolumn{6}{c}{\\textbf{BEANS}} & \\multicolumn{9}{c}{\\makecell[c]{\\textbf{BirdSet} \\\\[-12pt] \\hspace{-7.5cm} {\\color{gray}\\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\\\\n"
             "    \\addlinespace[2pt]\n"
             "    \\cline{3-17} % Ensuring cline matches actual columns\n"
             "    \\addlinespace[2pt]\n\n"
             "    \\multicolumn{2}{c}{} & \\cellcolor{gray!25}\\textbf{\\textsc{WTK}}   & \\cellcolor{gray!25}\\textbf{\\textsc{BAT}} & \\cellcolor{gray!25}\\textbf{\\textsc{CBI}} & \\cellcolor{gray!25}\\textbf{\\textsc{DOG}} & \\cellcolor{gray!25}\\textbf{\\textsc{HUM}} & \\cellcolor{gray!25}\\textbf{\\underline{Score}}"
-            "                         & \\cellcolor{gray!25}\\textbf{\\textsc{PER}}   & \\cellcolor{gray!25}\\textbf{\\textsc{POW}} & \\cellcolor{gray!25}\\textbf{\\textsc{NES}} & \\cellcolor{gray!25}\\textbf{\\textsc{UHH}} & \\cellcolor{gray!25}\\textbf{\\textsc{HSN}} & \\cellcolor{gray!25}\\textbf{\\textsc{NBP}}   & \\cellcolor{gray!25}\\textbf{\\textsc{SSW}} & \\cellcolor{gray!25}\\textbf{\\textsc{SNE}} & \\cellcolor{gray!25}\\textbf{\\underline{Score}}                                                                         \\\\\n"
+            "                         & \\cellcolor{gray!25}\\textbf{\\textsc{POW}}   & \\cellcolor{gray!25}\\textbf{\\textsc{PER}} & \\cellcolor{gray!25}\\textbf{\\textsc{NES}} & \\cellcolor{gray!25}\\textbf{\\textsc{UHH}} & \\cellcolor{gray!25}\\textbf{\\textsc{HSN}} & \\cellcolor{gray!25}\\textbf{\\textsc{NBP}}   & \\cellcolor{gray!25}\\textbf{\\textsc{SSW}} & \\cellcolor{gray!25}\\textbf{\\textsc{SNE}} & \\cellcolor{gray!25}\\textbf{\\underline{Score}}                                                                         \\\\\n"
             "    \\addlinespace[2pt]\n"
             "    \\cline{3-17} % Adjusting cline to match new column numbers\n"
             "    \\addlinespace[2pt]\n"
@@ -239,21 +239,21 @@ def birdset_table(models, model_names, path, path_beans):
             cmap_ap.append(
                 ap_rows["Cmap"].max() if not ap_rows.empty else 0
             )
-        # Averages without the second (1) column POW
+        # Averages without the first (0th) column POW
         avg_cmap_lp = (
-            round(np.mean([x for i, x in enumerate(cmap_lp) if x > 0 and i != 1]), 1)
-            if any(x > 0 and i != 1 for i, x in enumerate(cmap_lp))
+            round(np.mean([x for i, x in enumerate(cmap_lp) if x > 0 and i != 0]), 1)
+            if any(x > 0 and i != 0 for i, x in enumerate(cmap_lp))
             else 0
         )
         avg_cmap_ft = (
-            round(np.mean([x for i, x in enumerate(cmap_ft) if x > 0 and i != 1]), 1)
-            if any(x > 0 and i != 1 for i, x in enumerate(cmap_ft))
+            round(np.mean([x for i, x in enumerate(cmap_ft) if x > 0 and i != 0]), 1)
+            if any(x > 0 and i != 0 for i, x in enumerate(cmap_ft))
             else 0
         )
 
         avg_cmap_ap = (
-            round(np.mean([x for i, x in enumerate(cmap_ap) if x > 0 and i != 1]), 1)
-            if any(x > 0 and i != 1 for i, x in enumerate(cmap_ap))
+            round(np.mean([x for i, x in enumerate(cmap_ap) if x > 0 and i != 0]), 1)
+            if any(x > 0 and i != 0 for i, x in enumerate(cmap_ap))
             else 0
         )
 
