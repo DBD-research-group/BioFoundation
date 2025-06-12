@@ -32,10 +32,6 @@ module:
   network:
     torch_compile: False
     model:
-      classifier:
-        _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
-        num_classes: ${module.network.model.num_classes}
-        in_features: ${module.network.embedding_size}
       freeze_backbone: True
       pooling: "attentive"
       classifier:
