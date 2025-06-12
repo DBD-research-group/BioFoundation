@@ -166,10 +166,13 @@ class iNatSoundModel(BioFoundationModel):
         def chunk_audio(waveform):
             total_len = waveform.size(-1)
             chunks = []
-            for start in range(0, total_len, STRIDE_SIZE):
-                end = start + WINDOW_SIZE
-                chunk = pad_or_trim(waveform[..., start:end], WINDOW_SIZE)
-                chunks.append(chunk)
+            if waveform.size(-1) <= WINDOW_SIZE:
+                chunks = [pad_or_trim(waveform, WINDOW_SIZE)]
+            else:
+                for start in range(0, total_len, STRIDE_SIZE):
+                    end = start + WINDOW_SIZE
+                    chunk = pad_or_trim(waveform[..., start:end], WINDOW_SIZE)
+                    chunks.append(chunk)
             return chunks
 
         def extract_features(wav_chunk):
