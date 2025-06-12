@@ -24,7 +24,7 @@ logger:
     
 module:
   optimizer:
-    lr: 1e-2
+    lr: 5e-3
     weight_decay: 5e-4
   loss:
     _target_: torch.nn.CrossEntropyLoss
@@ -33,6 +33,10 @@ module:
     model:
       preprocess_in_model: True
       freeze_backbone: True
+      classifier:
+        _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
+        num_classes: ${module.network.model.num_classes}
+        in_features: ${module.network.embedding_size}
     # pretrain_info:
     #   hf_path: DBD-research-group/BirdSet
     #   hf_name: SNE
@@ -61,19 +65,19 @@ datamodule:
  
   loaders:
     train:
-      batch_size: 32
+      batch_size: 128
       shuffle: True
       num_workers: 16
       drop_last: True
       prefetch_factor: 2
  
     valid:
-      batch_size: 32
+      batch_size: 64
       num_workers: 16
       shuffle: False
    
     test:
-      batch_size: 16
+      batch_size: 64
       num_workers: 16
       shuffle: False
  
