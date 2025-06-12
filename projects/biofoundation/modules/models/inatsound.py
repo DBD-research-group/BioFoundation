@@ -1,4 +1,4 @@
-#from biofoundation.modules.models.birdset_model import BirdSetModel
+# from biofoundation.modules.models.birdset_model import BirdSetModel
 from torch import nn
 import torchvision.models as models
 import torch
@@ -7,6 +7,7 @@ from torchaudio.compliance import kaldi
 import torchaudio.transforms as T
 import torchvision.transforms as TV
 from biofoundation.modules.models.biofoundation_model import BioFoundationModel
+
 
 class iNatSoundModel(BioFoundationModel):
     """
@@ -34,8 +35,8 @@ class iNatSoundModel(BioFoundationModel):
         )
 
         self.num_classes = num_classes
-        #self.model = None
-        #self.load_model()
+        # self.model = None
+        # self.load_model()
 
         if classifier is None:
             self.model.heads.head = nn.Linear(embedding_size, num_classes)
@@ -85,13 +86,15 @@ class iNatSoundModel(BioFoundationModel):
         TARGET_SR = 22050
         FRAME_LENGTH = 512 * 1000 / TARGET_SR  # in ms
         FRAME_SHIFT = 128 * 1000 / TARGET_SR
-    
+
         device = input_values.device
         melspecs = []
         target_length = 512
 
         for waveform in input_values:
-            if waveform.shape[-1] < 512: #! Does this make sense? But shouldnt be a problem anyway
+            if (
+                waveform.shape[-1] < 512
+            ):  #! Does this make sense? But shouldnt be a problem anyway
                 waveform = F.pad(waveform, (0, 512 - waveform.shape[-1]))
             melspec = kaldi.fbank(
                 waveform,
@@ -106,7 +109,7 @@ class iNatSoundModel(BioFoundationModel):
             print(melspec.shape)
 
             # Pad or crop mel spectrogram to fixed width (time dimension = 512)
-            if melspec.shape[0] < target_length: 
+            if melspec.shape[0] < target_length:
                 pad_amount = target_length - melspec.shape[0]
                 melspec = F.pad(melspec, (0, 0, 0, pad_amount))
             else:
@@ -138,7 +141,7 @@ class iNatSoundModel(BioFoundationModel):
         # convert gray scale to 3 channels (RGB)
         melspecs = melspecs.repeat(1, 3, 1, 1)
         return melspecs
-    
+
     def preprocess(self, batch_waveforms, sample_rate=22050):
         TARGET_SR = 22050
         WINDOW_DURATION = 3.0
@@ -151,7 +154,7 @@ class iNatSoundModel(BioFoundationModel):
         FRAME_SHIFT = 128 * 1000 / TARGET_SR
         TARGET_SIZE = (224, 224)
 
-        def resample_if_needed(waveform, orig_sr): #! Brauch man nicht
+        def resample_if_needed(waveform, orig_sr):  #! Brauch man nicht
             if orig_sr != TARGET_SR:
                 resampler = T.Resample(orig_sr, TARGET_SR)
                 waveform = resampler(waveform)
@@ -176,16 +179,18 @@ class iNatSoundModel(BioFoundationModel):
             return chunks
 
         def extract_features(wav_chunk):
-            feats = kaldi.fbank(wav_chunk,
-                        num_mel_bins=MEL_BINS,
-                        sample_frequency=TARGET_SR,
-                        frame_length=FRAME_LENGTH,
-                        frame_shift=FRAME_SHIFT,
-                        dither=0.0,
-                        low_freq=MEL_LOW,
-                        high_freq=MEL_HIGH,
-                        use_energy=False,
-                        window_type='hanning')
+            feats = kaldi.fbank(
+                wav_chunk,
+                num_mel_bins=MEL_BINS,
+                sample_frequency=TARGET_SR,
+                frame_length=FRAME_LENGTH,
+                frame_shift=FRAME_SHIFT,
+                dither=0.0,
+                low_freq=MEL_LOW,
+                high_freq=MEL_HIGH,
+                use_energy=False,
+                window_type="hanning",
+            )
             return feats
 
         def log_mel_to_uint8(log_mel):
@@ -197,7 +202,9 @@ class iNatSoundModel(BioFoundationModel):
 
         def format_for_vit(img_gray):
             img_rgb = img_gray.unsqueeze(0).repeat(3, 1, 1).float() / 255.0
-            return TV.Resize(TARGET_SIZE, interpolation=TV.InterpolationMode.BILINEAR)(img_rgb)
+            return TV.Resize(TARGET_SIZE, interpolation=TV.InterpolationMode.BILINEAR)(
+                img_rgb
+            )
 
         batch_size = batch_waveforms.size(0)
         all_chunks = []
@@ -209,7 +216,6 @@ class iNatSoundModel(BioFoundationModel):
                 waveform = waveform.unsqueeze(0)
             if waveform.size(0) > 1:
                 waveform = waveform.mean(dim=0, keepdim=True)
-
 
             waveform = resample_if_needed(waveform, sample_rate)
             chunks = chunk_audio(waveform)
@@ -229,6 +235,8 @@ class iNatSoundModel(BioFoundationModel):
                 pad_img = torch.zeros((3, *TARGET_SIZE))
                 all_chunks[i] += [pad_img] * (max_chunks - num_chunks)
 
-        #batch_tensor = torch.stack([seq[0] for seq in all_chunks])  # [B, 3, 224, 224] We just take first chunk for now
-        batch_tensor = torch.stack([torch.stack(seq).mean(dim=0) for seq in all_chunks]) # Average over chunks
+        # batch_tensor = torch.stack([seq[0] for seq in all_chunks])  # [B, 3, 224, 224] We just take first chunk for now
+        batch_tensor = torch.stack(
+            [torch.stack(seq).mean(dim=0) for seq in all_chunks]
+        )  # Average over chunks
         return batch_tensor
