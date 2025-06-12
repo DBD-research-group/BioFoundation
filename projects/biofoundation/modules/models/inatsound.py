@@ -1,4 +1,4 @@
-from biofoundation.modules.models.birdset_model import BirdSetModel
+#from biofoundation.modules.models.birdset_model import BirdSetModel
 from torch import nn
 import torchvision.models as models
 import torch
@@ -6,9 +6,9 @@ import torch.nn.functional as F
 from torchaudio.compliance import kaldi
 import torchaudio.transforms as T
 import torchvision.transforms as TV
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
-
-class ViTModel(BirdSetModel):
+class iNatSoundModel(BioFoundationModel):
     """
     ViT-B-16 model implemented like in the iNaturalist paper: https://openreview.net/pdf?id=QCY01LvyKm.
     """
@@ -34,8 +34,8 @@ class ViTModel(BirdSetModel):
         )
 
         self.num_classes = num_classes
-        self.model = None
-        self.load_model()
+        #self.model = None
+        #self.load_model()
 
         if classifier is None:
             self.model.heads.head = nn.Linear(embedding_size, num_classes)
@@ -50,8 +50,8 @@ class ViTModel(BirdSetModel):
                 if "heads.head" not in name:
                     param.requires_grad = False
 
-    def load_model(self) -> None:
-        self.model = models.vit_b_16(weights=None)
+    def _load_model(self) -> nn.Module:
+        model = models.vit_b_16(weights=None)
 
         checkpoint_path = "/workspace/models/vit/vit_single_mixup.pt"
         state_dict = torch.load(checkpoint_path)
@@ -60,7 +60,8 @@ class ViTModel(BirdSetModel):
         for key in keys_to_remove:
             del state_dict[key]
 
-        self.model.load_state_dict(state_dict, strict=False)
+        model.load_state_dict(state_dict, strict=False)
+        return model
 
     def forward(
         self, input_values: torch.Tensor, labels: torch.Tensor | None
@@ -205,6 +206,7 @@ class ViTModel(BirdSetModel):
                 waveform = waveform.unsqueeze(0)
             if waveform.size(0) > 1:
                 waveform = waveform.mean(dim=0, keepdim=True)
+
 
             waveform = resample_if_needed(waveform, sample_rate)
             chunks = chunk_audio(waveform)

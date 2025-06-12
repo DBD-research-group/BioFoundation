@@ -1,12 +1,12 @@
 model: 
-  _target_: biofoundation.modules.models.vit.ViTModel
+  _target_: biofoundation.modules.models.inatsound.iNatSoundModel
   num_classes: null
   
 
-model_name: vit
+model_name: inatsound
 model_type: waveform
 torch_compile: False
-sampling_rate: 22_050
+sample_rate: 22_050
 normalize_spectrogram: False
 normalize_waveform: False
 embedding_size: 768
