@@ -32,7 +32,6 @@ module:
   network:
     torch_compile: False
     model:
-      preprocess_in_model: True
       freeze_backbone: True
       classifier:
         _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
