@@ -131,6 +131,7 @@ class ConvNextModule(BioFoundationModel):
         """
         return nn.Sequential(
             torchaudio.transforms.Spectrogram(n_fft=1024, hop_length=320, power=2.0),
+            torchaudio.transforms.MelScale(n_mels=128, n_stft=513, sample_rate=32_000),
             transforms.Normalize((-4.268,), (4.569,)),
             PowerToDB(top_db=80),
         )
