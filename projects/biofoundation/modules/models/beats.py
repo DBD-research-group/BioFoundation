@@ -24,8 +24,8 @@ class BEATsModel(ViT):
         self,
         num_classes: int | None,
         embedding_size: int = EMBEDDING_SIZE,
-        local_checkpoint: str = None,
         checkpoint_path: str = "/workspace/models/beats/BEATs_iter3_plus_AS2M.pt",
+        local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
@@ -35,6 +35,8 @@ class BEATsModel(ViT):
             "just_cls", "attentive", "attentive_old", "average", "mean"
         ] = "just_cls",
     ) -> None:
+        self.model = None  # Placeholder for the loaded model
+        self.checkpoint_path = checkpoint_path
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
@@ -46,23 +48,9 @@ class BEATsModel(ViT):
             pretrain_info=pretrain_info,
             pooling=pooling,
         )
-        self.model = None  # Placeholder for the loaded model
-        self.checkpoint_path = checkpoint_path
+        
 
-        self.load_model()
-        if classifier is None:
-            self.classifier = nn.Linear(embedding_size, num_classes)
-        else:
-            self.classifier = classifier
-
-        if local_checkpoint:
-            self._load_local_checkpoint()
-
-        if freeze_backbone:
-            for param in self.model.parameters():
-                param.requires_grad = False
-
-    def load_model(self) -> None:
+    def _load_model(self) -> None:
         """
         Load the model from shared storage.
         """
@@ -71,18 +59,18 @@ class BEATsModel(ViT):
         checkpoint = torch.load(self.checkpoint_path)
 
         cfg = BEATsConfig(checkpoint["cfg"])
-        self.model = BEATs(cfg)
-        self.model.load_state_dict(checkpoint["model"])
+        model = BEATs(cfg)
+        model.load_state_dict(checkpoint["model"])
         # self.model.predictor = None  # This should happen autom. if correct checkpoint
-        self.model.eval()
+        return model
 
-    def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+    def _load_preprocessor(self):
         """
         Preprocessing for the input values is done in BETAs.py
         The waveform gets resampled to 16kHz, transformed into a fbank and then normalized.
         """
-        return input_values
-
+        return nn.Identity()
+    
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
@@ -96,13 +84,17 @@ class BEATsModel(ViT):
         Returns:
             torch.Tensor: The output of the classifier.
         """
-        embeddings = self.get_embeddings(input_values, self.pooling_type)
-        # flattend_embeddings = embeddings.reshape(embeddings.size(0), -1)
-        if self.model.predictor is not None:
-            return embeddings
-        return self.classifier(embeddings)
+        if self.preprocess_in_model:
+            input_values = self._preprocess(input_values)
+        if self.classifier is not None:
+            embeddings = self.get_embeddings(input_values)
+            logits = self.classifier(embeddings)
+        else:
+           logits = self.model(input_values)[0]
 
-    def get_embeddings(self, input_values: torch.Tensor, pooling_type) -> torch.Tensor:
+        return logits
+
+    def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
         """
         Get the embeddings and logits from the BEATs model.
 
@@ -112,12 +104,10 @@ class BEATsModel(ViT):
         Returns:
             torch.Tensor: The embeddings from the model.
         """
-        if self.preprocess_in_model:
-            input_values = self._preprocess(input_values)
         embeddings = self.model.extract_features(input_values)[
             0
-        ]  # outputs a tensor of size 496x768
-        return self.pool(embeddings, pooling_type)
+        ]  # outputs a tensor of size batch_sizex496x768
+        return self.pool(embeddings, self.pooling_type)
 
     def get_num_layers(self) -> int:
         """

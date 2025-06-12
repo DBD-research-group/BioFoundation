@@ -1,9 +1,8 @@
 model: 
   _target_: biofoundation.modules.models.beats.BEATsModel
-  checkpoint_path: '/workspace/models/beats/beats_naturelm.pt'
   num_classes: null
 
-model_name: BEATs
+model_name: BEATs_NatureLM
 model_type: waveform
 torch_compile: False
 sample_rate: 16_000
