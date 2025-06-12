@@ -31,7 +31,10 @@ module:
   network:
     torch_compile: False
     model:
-      preprocess_in_model: True
+      classifier:
+        _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
+        num_classes: ${module.network.model.num_classes}
+        in_features: ${module.network.embedding_size}
       freeze_backbone: True
       pooling: "attentive"
     # pretrain_info:
@@ -44,7 +47,7 @@ module:
  
 trainer:
   min_epochs: 1
-  max_epochs: 100
+  max_epochs: 50
   devices: [3]
  
 datamodule:
@@ -74,8 +77,8 @@ datamodule:
       shuffle: False
    
     test:
-      batch_size: 16
-      num_workers: 16
+      batch_size: 32
+      num_workers: 8
       shuffle: False
  
 callbacks:
@@ -89,7 +92,7 @@ callbacks:
   early_stopping:
     _target_: lightning.pytorch.callbacks.EarlyStopping
     monitor: "val/MulticlassAccuracy"
-    patience: 15
+    patience: 5
     mode: 'max'
     min_delta: 1e-3 
     verbose: False
