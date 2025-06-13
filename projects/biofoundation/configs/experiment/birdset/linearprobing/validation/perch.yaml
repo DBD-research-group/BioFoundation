@@ -1,0 +1,5 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - birdset/linearprobing/validation/validation_config.yaml 
+  - override /module/network: perch.yaml 
