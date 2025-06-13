@@ -24,7 +24,7 @@ logger:
 module:
   optimizer:
     lr: 1.3e-3
-    weight_decay: 7e-3
+    weight_decay: 5e-4
   loss:
   #  _target_: birdset.modules.losses.asymmetric_loss.AsymmetricLossMultiLabel
     _target_: torch.nn.BCEWithLogitsLoss
@@ -32,9 +32,12 @@ module:
   network:
     torch_compile: False
     model:
-      preprocess_in_model: True
       freeze_backbone: True
       pooling: "attentive"
+      classifier:
+        _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
+        num_classes: ${module.network.model.num_classes}
+        in_features: ${module.network.embedding_size}
     # pretrain_info:
     #   hf_path: DBD-research-group/BirdSet
     #   hf_name: SNE
@@ -42,7 +45,7 @@ module:
  
 trainer:
   min_epochs: 1
-  max_epochs: 50
+  max_epochs: 20
   devices: [2]
  
 datamodule:

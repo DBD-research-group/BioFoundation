@@ -157,9 +157,7 @@ class BEATs(nn.Module):
         fbank = (fbank - fbank_mean) / (2 * fbank_std)
         return fbank
 
-    def extract_features(
-        self,
-        source: torch.Tensor,
+    def forward(self,source: torch.Tensor,
         padding_mask: Optional[torch.Tensor] = None,
         fbank_mean: float = 15.41663,
         fbank_std: float = 6.55582,
@@ -202,8 +200,41 @@ class BEATs(nn.Module):
             else:
                 logits = logits.mean(dim=1)
 
-            lprobs = torch.sigmoid(logits)
-
-            return lprobs, padding_mask
+            return logits, padding_mask
         else:
             return x, padding_mask
+                
+    def extract_features(
+        self,
+        source: torch.Tensor,
+        padding_mask: Optional[torch.Tensor] = None,
+        fbank_mean: float = 15.41663,
+        fbank_std: float = 6.55582,
+    ):
+        fbank = self.preprocess(source, fbank_mean=fbank_mean, fbank_std=fbank_std)
+        device = source.device
+        fbank.to(device)
+        if padding_mask is not None:
+            padding_mask = self.forward_padding_mask(fbank, padding_mask)
+
+        fbank = fbank.unsqueeze(1)
+        features = self.patch_embedding(fbank)
+        features = features.reshape(features.shape[0], features.shape[1], -1)
+        features = features.transpose(1, 2)
+        features = self.layer_norm(features)
+
+        if padding_mask is not None:
+            padding_mask = self.forward_padding_mask(features, padding_mask)
+
+        if self.post_extract_proj is not None:
+            features = self.post_extract_proj(features)
+
+        x = self.dropout_input(features)
+
+        x, layer_results = self.encoder(
+            x,
+            padding_mask=padding_mask,
+        )
+
+
+        return x, padding_mask
