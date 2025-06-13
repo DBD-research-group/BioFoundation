@@ -2,11 +2,4 @@
 #package global is neccessary!
 defaults:
   - beans/finetuning/finetuning_config.yaml 
-  - override /module/network: aves.yaml  
-
-module:
-  network:
-    model:
-      checkpoint: /workspace/models/aves/birdaves-biox-base.torchaudio.pt 
-      config: /workspace/models/aves/birdaves-biox-base.torchaudio.model_config.json
-    model_name: bird_aves
+  - override /module/network: bird_aves.yaml 
