@@ -2,7 +2,7 @@
 #package global is neccessary!
 defaults:
   - birdset/finetuning/finetuning_config.yaml 
-  - override /module/network: inatsound.yaml
+  - override /module/network: vit_inatsound.yaml
 
 datamodule:
   dataset:

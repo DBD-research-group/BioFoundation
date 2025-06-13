@@ -9,7 +9,7 @@ import torchvision.transforms as TV
 from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
-class iNatSoundModel(BioFoundationModel):
+class Vit_iNatSoundModel(BioFoundationModel):
     """
     ViT-B-16 model implemented like in the iNaturalist paper: https://openreview.net/pdf?id=QCY01LvyKm.
     """

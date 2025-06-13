@@ -1,9 +1,9 @@
 model: 
-  _target_: biofoundation.modules.models.inatsound.iNatSoundModel
+  _target_: biofoundation.modules.models.vit_inatsound.Vit_iNatSoundModel
   num_classes: null
   
 
-model_name: inatsound
+model_name: vit_inatsound
 model_type: waveform
 torch_compile: False
 sample_rate: 22_050
