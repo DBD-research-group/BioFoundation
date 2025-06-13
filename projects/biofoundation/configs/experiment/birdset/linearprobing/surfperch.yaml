@@ -2,15 +2,4 @@
 #package global is neccessary!
 defaults:
   - birdset/linearprobing/linearprobing_config.yaml 
-  - override /module/network: perch_logreg.yaml  
-
-module:
-  network:
-    model:
-      classifier:
-        _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
-        in_features: 1280
-        num_classes: ${module.network.model.num_classes}
-      checkpoint_path: "https://www.kaggle.com/models/google/surfperch/TensorFlow2/1"
-      tfhub_version: 1
-    model_name: surfperch
+  - override /module/network: surfperch.yaml  
