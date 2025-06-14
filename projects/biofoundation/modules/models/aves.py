@@ -46,6 +46,7 @@ class AvesClassifier(ViT):
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
             pretrain_info=pretrain_info,
+            pooling=pooling,
         )
         if classifier is None:
             self.classifier = nn.Linear(embedding_size, num_classes)
