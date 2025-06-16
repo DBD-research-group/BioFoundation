@@ -1,6 +1,7 @@
 model: 
   _target_: biofoundation.modules.models.vit_inatsound.Vit_iNatSoundModel
   num_classes: null
+  pooling: 'just_cls'
   
 
 model_name: vit_inatsound

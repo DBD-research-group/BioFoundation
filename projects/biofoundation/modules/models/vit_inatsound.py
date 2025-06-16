@@ -6,10 +6,13 @@ import torch.nn.functional as F
 from torchaudio.compliance import kaldi
 import torchaudio.transforms as T
 import torchvision.transforms as TV
-from biofoundation.modules.models.biofoundation_model import BioFoundationModel
+#from biofoundation.modules.models.biofoundation_model import BioFoundationModel
+from biofoundation.modules.models.vit import ViT
+from birdset.configs.model_configs import PretrainInfoConfig
+from typing import Literal, Optional, Tuple
 
 
-class Vit_iNatSoundModel(BioFoundationModel):
+class Vit_iNatSoundModel(ViT):
     """
     ViT-B-16 model implemented like in the iNaturalist paper: https://openreview.net/pdf?id=QCY01LvyKm.
     """
@@ -25,6 +28,8 @@ class Vit_iNatSoundModel(BioFoundationModel):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
         classifier: nn.Module = None,
+        pretrain_info: PretrainInfoConfig = None,
+        pooling: Literal["just_cls", "attentive", "average"] = "just_cls",
     ) -> None:
         super().__init__(
             num_classes=num_classes,
@@ -32,6 +37,7 @@ class Vit_iNatSoundModel(BioFoundationModel):
             local_checkpoint=local_checkpoint,
             load_classifier_checkpoint=load_classifier_checkpoint,
             preprocess_in_model=preprocess_in_model,
+            pooling=pooling,
         )
 
         self.num_classes = num_classes
@@ -78,8 +84,17 @@ class Vit_iNatSoundModel(BioFoundationModel):
             torch.Tensor: The output of the classifier.
         """
         # input_values = self.duplicate_channels(input_values)
-        spectograms = self.preprocess(input_values)
-        return self.model(spectograms)
+        #spectograms = self.preprocess(input_values)
+        #return self.model(spectograms)
+        if self.preprocess_in_model:
+            input_values = self.preprocess(input_values)
+        if self.classifier is not None:
+            embeddings = self.get_embeddings(input_values)
+            logits = self.classifier(embeddings)
+        else:
+            logits = self.model(input_values)
+
+        return logits
 
     #! Seems very similar to the other implementation except the chunking and frame_length and frame_shift which are bit different in the def values
     def preprocess_old(self, input_values: torch.Tensor) -> torch.Tensor:
@@ -240,3 +255,19 @@ class Vit_iNatSoundModel(BioFoundationModel):
             [torch.stack(seq).mean(dim=0) for seq in all_chunks]
         )  # Average over chunks
         return batch_tensor
+
+  
+    def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
+        """
+        Get the embeddings and logits from the AUDIOMAE model.
+
+        Args:
+            input_tensor (torch.Tensor): The input tensor for the model.
+
+        Returns:
+            torch.Tensor: The embeddings from the model.
+        """
+        embeddings = self.model.forward_features(
+            input_values
+        )  # shape (batch_size, 513, 768)
+        return self.pool(embeddings, self.pooling_type)
