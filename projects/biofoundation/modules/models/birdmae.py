@@ -12,11 +12,8 @@ from timm.models.vision_transformer import VisionTransformer,PatchEmbed
 
 class BirdMAEModel(ViT):
     """
-    Pretrained model for audio classification using the AUDIOMAE model.
-    Masked Autoencoders that Listen: https://arxiv.org/abs/2207.06405
-    Pretrained weights from Huggingface: gaunernst/vit_base_patch16_1024_128.audiomae_as2m
-
-    The model expect a 1D audio signale sampled with 16kHz and a length of 10s.
+   BirdMAE model from the paper "Can Masked Autoencoders Also Listen to Birds?"
+   Rauch et al. 2025 https://arxiv.org/abs/2504.12880
     """
 
     EMBEDDING_SIZE = 1024
