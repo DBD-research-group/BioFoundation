@@ -1,5 +1,9 @@
 from typing import Literal, Optional
-from biofoundation.modules.models.Pooling import AttentivePooling, AttentivePooling_old, AveragePooling
+from biofoundation.modules.models.Pooling import (
+    AttentivePooling,
+    AttentivePooling_old,
+    AveragePooling,
+)
 from biofoundation.modules.models.vit import ViT
 import torch
 from torch import nn
@@ -7,13 +11,13 @@ import torch.nn.functional as F
 from torchaudio.compliance.kaldi import fbank
 
 from birdset.configs.model_configs import PretrainInfoConfig
-from timm.models.vision_transformer import VisionTransformer,PatchEmbed
+from timm.models.vision_transformer import VisionTransformer, PatchEmbed
 
 
 class BirdMAEModel(ViT):
     """
-   BirdMAE model from the paper "Can Masked Autoencoders Also Listen to Birds?"
-   Rauch et al. 2025 https://arxiv.org/abs/2504.12880
+    BirdMAE model from the paper "Can Masked Autoencoders Also Listen to Birds?"
+    Rauch et al. 2025 https://arxiv.org/abs/2504.12880
     """
 
     EMBEDDING_SIZE = 1024
@@ -64,14 +68,14 @@ class BirdMAEModel(ViT):
 
     def _load_model(self) -> None:
         vit = VisionTransformer(
-            img_size=(512,128),
+            img_size=(512, 128),
             patch_size=16,
             in_chans=1,
             num_classes=9735,
             embed_dim=1024,
             depth=24,
             num_heads=16,
-            mlp_ratio=4.,
+            mlp_ratio=4.0,
             qkv_bias=True,
             norm_layer=torch.nn.LayerNorm,
         )
@@ -79,14 +83,20 @@ class BirdMAEModel(ViT):
         pretrained_weights_path = self.checkpoint_path
         img_size = (512, 128)
         embed_dim = 1024
-        num_patches = 256 # birdset
+        num_patches = 256  # birdset
         vit.patch_embed = PatchEmbed(img_size, 16, 1, embed_dim)
-        #self.patch_embed = PatchEmbed_org(img_size, 16, 1, self.embed_dim)
-        vit.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim), requires_grad=False) #to load pretrained pos embed
+        # self.patch_embed = PatchEmbed_org(img_size, 16, 1, self.embed_dim)
+        vit.pos_embed = nn.Parameter(
+            torch.zeros(1, num_patches + 1, embed_dim), requires_grad=False
+        )  # to load pretrained pos embed
         try:
-            pre_state_dict = torch.load(pretrained_weights_path, map_location="cpu")["model"]
+            pre_state_dict = torch.load(pretrained_weights_path, map_location="cpu")[
+                "model"
+            ]
         except:
-            pre_state_dict = torch.load(pretrained_weights_path, map_location="cpu", weights_only=False)["state_dict"]
+            pre_state_dict = torch.load(
+                pretrained_weights_path, map_location="cpu", weights_only=False
+            )["state_dict"]
         pretrained_state_dict = {}
         for key, value in pre_state_dict.items():
             if key.startswith("decoder."):
@@ -94,32 +104,30 @@ class BirdMAEModel(ViT):
                 continue
             elif key.startswith("encoder."):
                 # Remove the "encoder." prefix
-                new_key = key[len("encoder."):]
+                new_key = key[len("encoder.") :]
             else:
                 # Use the original key if no prefix
                 new_key = key
-            
+
             # Add the modified key-value pair to the new state dict
             pretrained_state_dict[new_key] = value
 
-
         info = vit.load_state_dict(pretrained_state_dict, strict=False)
         # patch_hw = (img_size[1] // 16, img_size[0] // 16) # 16=patchsize
-        # #patch_hw = (img_size[0] // 16, img_size[1] // 16) 
+        # #patch_hw = (img_size[0] // 16, img_size[1] // 16)
         # pos_embed = get_2d_sincos_pos_embed_flexible(self.pos_embed.size(-1), patch_hw, cls_token=True) # not trained, overwrite from sincos
-        # self.pos_embed.data = torch.from_numpy(pos_embed).float().unsqueeze(0) 
+        # self.pos_embed.data = torch.from_numpy(pos_embed).float().unsqueeze(0)
         # print("Loaded pretrained weights with info:", info)
         return vit
-    
+
     def _pad_and_normalize(self, fbank_features):
         difference = 512 - fbank_features[0].shape[0]
         min_value = fbank_features.min()
-        #min_value = -80
+        # min_value = -80
         if 512 > fbank_features.shape[0]:
             padding = (0, 0, 0, difference)
             fbank_features = F.pad(fbank_features, padding, value=min_value.item())
         return fbank_features
-
 
     def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
         """
@@ -137,18 +145,22 @@ class BirdMAEModel(ViT):
                 htk_compat=True,
                 sample_frequency=32_000,
                 use_energy=False,
-                window_type='hanning',
+                window_type="hanning",
                 num_mel_bins=128,
                 dither=0.0,
-                frame_shift=10
+                frame_shift=10,
             )
             for waveform in input_values
         ]
         preprpocessed_fbank_features = torch.stack(fbank_features)
         # Pad and normalize the fbank features
-        preprpocessed_fbank_features = self._pad_and_normalize(preprpocessed_fbank_features)
+        preprpocessed_fbank_features = self._pad_and_normalize(
+            preprpocessed_fbank_features
+        )
         # normalize the fbank features mean: -7.2 std: 4.43
-        preprpocessed_fbank_features = (preprpocessed_fbank_features - self.MEAN) / self.STD
+        preprpocessed_fbank_features = (
+            preprpocessed_fbank_features - self.MEAN
+        ) / self.STD
         return preprpocessed_fbank_features.unsqueeze(1)  # Add channel dimension
 
     def forward(

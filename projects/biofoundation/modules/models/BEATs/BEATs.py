@@ -157,7 +157,9 @@ class BEATs(nn.Module):
         fbank = (fbank - fbank_mean) / (2 * fbank_std)
         return fbank
 
-    def forward(self,source: torch.Tensor,
+    def forward(
+        self,
+        source: torch.Tensor,
         padding_mask: Optional[torch.Tensor] = None,
         fbank_mean: float = 15.41663,
         fbank_std: float = 6.55582,
@@ -203,7 +205,7 @@ class BEATs(nn.Module):
             return logits, padding_mask
         else:
             return x, padding_mask
-                
+
     def extract_features(
         self,
         source: torch.Tensor,
@@ -235,6 +237,5 @@ class BEATs(nn.Module):
             x,
             padding_mask=padding_mask,
         )
-
 
         return x, padding_mask

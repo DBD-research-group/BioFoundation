@@ -62,8 +62,7 @@ class ProtoCLRModel(BioFoundationModel):
 
     def _load_model(self) -> None:
         model = cvt13()
-        model.load_state_dict(
-            torch.load(self.checkpoint_path, map_location="cpu"))
+        model.load_state_dict(torch.load(self.checkpoint_path, map_location="cpu"))
 
         return model
 
@@ -103,7 +102,7 @@ class ProtoCLRModel(BioFoundationModel):
         output, cls_tokens = self.model.output_embeddings(input_values)
         if self.pooling == "just_cls":
             embeddings = cls_tokens
-        elif self.pooling == 'attentive' or self.pooling == 'average':
+        elif self.pooling == "attentive" or self.pooling == "average":
             embeddings = self.pooler(output)
 
         return embeddings
