@@ -4,7 +4,10 @@ defaults:
   - birdset/finetuning/finetuning_config.yaml 
   - override /module/network: vit_inatsound.yaml
 
+train: False
+test: True
 datamodule:
   dataset:
-    dataset_name: POW
-    hf_name: POW
+    dataset_name: 'POW'
+    hf_name: 'POW'
+    #use_test_as_valid: True

@@ -6,5 +6,6 @@ defaults:
 
 datamodule:
   dataset:
-    dataset_name: POW
-    hf_name: POW
+    dataset_name: 'POW'
+    hf_name: 'POW'
+    #use_test_as_valid: True
