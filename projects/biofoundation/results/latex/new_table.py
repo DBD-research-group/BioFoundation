@@ -224,12 +224,15 @@ def birdset_table(models, model_names, path, path_beans):
                 (df["Model"] == model)
                 & (df["Dataset"] == dataset)
                 & (df["Tags"].str.contains("linearprobing"))
+                & (df["Pooling"] != "attentive")
+                & (df["Pooling"] != "average")
             ]
             ft_rows = df[
                 (df["Model"] == model)
                 & (df["Dataset"] == dataset)
                 & (df["Tags"].str.contains("finetune|finetuning"))
                 & (df["Pooling"] != "attentive")
+                & (df["Pooling"] != "average")
             ]
 
             ap_rows = df[
