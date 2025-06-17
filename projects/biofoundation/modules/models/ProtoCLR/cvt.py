@@ -634,6 +634,7 @@ class ConvolutionalVisionTransformer(nn.Module):
             x = torch.mean(x, dim=1)
 
         return x
+
     def output_embeddings(self, x):
         for i in range(self.num_stages):
             x, cls_tokens = getattr(self, f"stage{i}")(x)

@@ -1,0 +1,14 @@
+model: 
+  _target_: biofoundation.modules.models.birdmae.BirdMAEModel
+  num_classes: null
+  checkpoint_path: "/workspace/models/birdmae/2025-01-13_213828_AudioMAE_XCL_epoch=149.ckpt"
+  pooling: 'just_cls'
+  
+model_name: birdmae
+model_type: waveform
+torch_compile: False
+sample_rate: 32_000
+normalize_spectrogram: False
+normalize_waveform: False
+embedding_size: 1024
+length: 5
