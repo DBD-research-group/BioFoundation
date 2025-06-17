@@ -9,7 +9,7 @@ defaults:
   - override /datamodule/transforms: bird_default_multilabel.yaml
   - override /paths: default.yaml
   - override /hydra: default.yaml
-tags: ["biofoundation", "BirdSet", "augmentations", "pooling", "${module.network.model_name}", "validation", "POW"]
+tags: ["biofoundation", "BirdSet", "augmentations", "pooling", "${module.network.model_name}", "${module.network.model.pooling}"]                                               
 seed: 1
 train: True
 test: True
@@ -17,9 +17,9 @@ test: True
 logger:
   wandb:
     tags: ${tags}
-    group: "biofoundation_${module.network.model_name}_pooling_BirdSet__${datamodule.dataset.dataset_name}"
+    group: "biofoundation_${module.network.model_name}_pooling_${module.network.model.pooling}_BirdSet__${datamodule.dataset.dataset_name}"
     mode: online
-    version: ${module.network.model_name}_pooling_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
+    version: ${module.network.model_name}_${module.network.model.pooling}_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
  
 module:
   optimizer:
