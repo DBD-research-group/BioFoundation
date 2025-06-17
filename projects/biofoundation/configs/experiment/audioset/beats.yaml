@@ -4,8 +4,8 @@ defaults:
   - audioset/finetuning_config.yaml 
   - override /module/network: beats.yaml 
 
-datamodule:
-  debug: True
+# datamodule:
+#   debug: True
 
 module:
   network:

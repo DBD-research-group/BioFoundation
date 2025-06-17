@@ -635,6 +635,17 @@ class ConvolutionalVisionTransformer(nn.Module):
 
         return x
 
+    def output_embeddings(self, x):
+        for i in range(self.num_stages):
+            x, cls_tokens = getattr(self, f"stage{i}")(x)
+
+        x_cls = self.norm(cls_tokens)
+        # x = cls_tokens
+        cls_tokens = torch.squeeze(x_cls)
+        x = rearrange(x, "b c h w -> b (h w) c")
+        x = self.norm(x)
+        return x, cls_tokens
+
     def forward(self, x):
         x = self.forward_features(x)
         x = self.head(x)

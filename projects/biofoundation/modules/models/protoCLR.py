@@ -1,4 +1,5 @@
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple
+from biofoundation.modules.models.Pooling import AttentivePooling, AveragePooling
 from biofoundation.modules.models.ProtoCLR.cvt import cvt13
 import torch
 from torch import nn
@@ -27,13 +28,17 @@ class ProtoCLRModel(BioFoundationModel):
         self,
         num_classes: int | None,
         embedding_size: int = EMBEDDING_SIZE,
-        classifier: nn.Module | None = None,
+        checkpoint_path: str = "/workspace/models/protoclr/protoclr.pth",
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
+        classifier: nn.Module | None = None,
         pretrain_info: PretrainInfoConfig = None,
+        pooling: Literal["just_cls", "attentive", "average"] = "just_cls",
     ) -> None:
+        self.model = None
+        self.checkpoint_path = checkpoint_path
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
@@ -41,36 +46,28 @@ class ProtoCLRModel(BioFoundationModel):
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
-        )
-        self.model = None  # Placeholder for the loaded model
-        self.preprocessor = None  # Placeholder for the preprocessor
-        self.load_model()
-
-        if preprocess_in_model:
-            self.preprocessor = MelSpectrogramProcessor()
-
-        # Define a linear classifier to use on top of the embeddings
-        if classifier is None:
-            self.classifier = nn.Linear(embedding_size, num_classes)
-        else:
-            self.classifier = classifier
-
-        if local_checkpoint:
-            self._load_local_checkpoint()
-
-        # freeze the model
-        if freeze_backbone:
-            for param in self.model.parameters():
-                param.requires_grad = False
-
-    def load_model(self) -> None:
-        self.model = cvt13()
-        self.model.load_state_dict(
-            torch.load("/workspace/models/protoclr/protoclr.pth", map_location="cpu")
+            pretrain_info=pretrain_info,
+            pooling=pooling,
+            classifier=classifier,
         )
 
-    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
-        return self.preprocessor(input_values)
+        if self.pooling == "default":
+            self.pooler = nn.LayerNorm(
+                self.config.hidden_sizes[-1], eps=self.config.layer_norm_eps
+            )
+        elif self.pooling == "attentive":
+            self.pooler = AttentivePooling(dim=embedding_size, num_heads=8)
+        elif self.pooling == "average":
+            self.pooler = AveragePooling()
+
+    def _load_model(self) -> None:
+        model = cvt13()
+        model.load_state_dict(torch.load(self.checkpoint_path, map_location="cpu"))
+
+        return model
+
+    def _load_preprocessor(self):
+        return MelSpectrogramProcessor()
 
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
@@ -100,7 +97,12 @@ class ProtoCLRModel(BioFoundationModel):
             torch.Tensor: The embeddings from the model.
         """
         if self.preprocess_in_model:
-            input_values = self.preprocess(input_tensor)
+            input_values = self._preprocess(input_tensor)
 
-        output = self.model.forward_features(input_values)
-        return output
+        output, cls_tokens = self.model.output_embeddings(input_values)
+        if self.pooling == "just_cls":
+            embeddings = cls_tokens
+        elif self.pooling == "attentive" or self.pooling == "average":
+            embeddings = self.pooler(output)
+
+        return embeddings

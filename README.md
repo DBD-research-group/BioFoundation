@@ -7,11 +7,52 @@
 <a href="https://www.pytorchlightning.ai/"><img alt="PyTorch Lightning" src="https://img.shields.io/badge/PyTorch_Lightning-792ee5?logo=pytorch-lightning&logoColor=white"></a>
 <a href="https://hydra.cc/"><img alt="Config: Hydra" src="https://img.shields.io/badge/Config-Hydra-89b8cd"></a>
 
-
-  <img src="https://github.com/DBD-research-group/BirdSet/blob/main/resources/graphical_abstract.png" alt="logo", width=950>
+<div>
+<img src="https://github.com/DBD-research-group/BirdSet/blob/main/resources/graphical_abstract.png" alt="logo", width=950>
 </div>
 
 <br>
+
+<details>
+<summary>Table of Contents</summary>
+
+---
+
+- [User Installation 🐣](#user-installation-🐣)
+- [Experiments](#experiments)
+  - [Results table](#results-table)
+  - [BEANS](#beans)
+    - [Running Linear Probing Experiments on BEANS](#running-linear-probing-experiments-on-beans)
+    - [Running Finetuning Experiments](#running-finetuning-experiments)
+  - [Results](#results)
+  - [BirdSet](#birdset)
+    - [Running Fine-tuning Experiments on BirdSet](#running-fine-tuning-experiments-on-birdset)
+    - [Results](#results-1)
+    - [Running Linear Probing Experiments on BirdSet](#running-linear-probing-experiments-on-birdset)
+    - [Running FewShot Experiments on BirdSet](#running-fewshot-experiments-on-birdset)
+  - [BEANS](#beans-1)
+    - [Running Fine-tuning Experiments on BEANS](#running-fine-tuning-experiments-on-beans)
+    - [Results](#results-2)
+    - [Running Linear Probing Experiments on BEANS](#running-linear-probing-experiments-on-beans-1)
+    - [Running FewShot Experiments on BEANS](#running-fewshot-experiments-on-beans)
+- [Sweeps with WandB](#sweeps-with-wandb)
+  - [Running a Sweep](#running-a-sweep)
+- [Example](#example)
+- [Prepare Data](#prepare-data)
+- [Prepare Model and Start Training](#prepare-model-and-start-training)
+- [Reproduce Baselines](#reproduce-baselines)
+  - [Dedicated Training (DT)](#dedicated-training-dt)
+  - [Medium Training (MT) and Large Training (LT)](#medium-training-mt-and-large-training-lt)
+- [Run experiments](#run-experiments)
+- [Testing](#testing)
+  - [Linting](#linting)
+  - [Integration Tests](#integration-tests)
+- [Q&A](#qa)
+- [Citation](#citation)
+- [Background noise](#background-noise)
+- [Transformations](#transformations)
+---
+</details>
 
 **TL;DR**
 > - Explore our **datasets** shared on Hugging Face 🤗 in the [BirdSet repository](https://huggingface.co/datasets/DBD-research-group/BirdSet).
@@ -56,6 +97,9 @@ poetry install
 poetry shell
 ```
 # Experiments
+
+## Results table 
+We have a [script](projects/biofoundation/results/latex/new_table.py) to automatically create the results table as it is quiet complex and changes often. To run the python script two .csv files named `beans.csv` and `birdset.csv` need to be in the same directory and they can be downloaded from the following [WandB Report](https://wandb.ai/deepbirddetect/BioFoundation/reports/Latex-Table-Data--VmlldzoxMjEyODQ0Ng). The [fill_tables.py](projects/biofoundation/results/latex/fill_tables.py) was used for the older tables and may not work as intended anymore.
 
 ## BEANS
 

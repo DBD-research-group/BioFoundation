@@ -2,4 +2,4 @@
 #package global is neccessary!
 defaults:
   - beans/attentive/attentive_config.yaml 
-  - override /module/network: beats_naturelm.yaml  
+  - override /module/network: audiomae.yaml  

@@ -2,4 +2,4 @@
 #package global is neccessary!
 defaults:
   - birdset/linearprobing/linearprobing_config.yaml 
-  - override /module/network: beats_naturelm.yaml 
+  - override /module/network: birdmae.yaml 
