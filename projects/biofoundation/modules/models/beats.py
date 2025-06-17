@@ -48,7 +48,6 @@ class BEATsModel(ViT):
             pretrain_info=pretrain_info,
             pooling=pooling,
         )
-        
 
     def _load_model(self) -> None:
         """
@@ -70,7 +69,7 @@ class BEATsModel(ViT):
         The waveform gets resampled to 16kHz, transformed into a fbank and then normalized.
         """
         return nn.Identity()
-    
+
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
@@ -90,7 +89,7 @@ class BEATsModel(ViT):
             embeddings = self.get_embeddings(input_values)
             logits = self.classifier(embeddings)
         else:
-           logits = self.model(input_values)[0]
+            logits = self.model(input_values)[0]
 
         return logits
 
