@@ -109,8 +109,7 @@ class Vit_iNatSoundModel(ViT):
 
         return logits
 
-    def preprocess2(self, input_values: torch.Tensor) -> torch.Tensor:
-        # faulty
+    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
         max_db_value = 0.0
         min_db_value = -100.0
 
@@ -125,100 +124,6 @@ class Vit_iNatSoundModel(ViT):
         )
         mel_img = mel_img.repeat(1, 3, 1, 1)
         return mel_img
-
-    def preprocess(self, batch_waveforms, sample_rate=22050):
-        TARGET_SR = 22050
-        WINDOW_DURATION = 3.0
-        WINDOW_SIZE = int(TARGET_SR * WINDOW_DURATION)
-        STRIDE_SIZE = WINDOW_SIZE // 2
-        MEL_BINS = 298
-        MEL_LOW = 50
-        MEL_HIGH = TARGET_SR // 2
-        FRAME_LENGTH = 256  # * 1000 / TARGET_SR
-        FRAME_SHIFT = 32  # 1000 / TARGET_SR
-        TARGET_SIZE = (224, 224)
-        MAX_DB_VALUE = 0.0
-        MIN_DB_VALUE = -100.0
-        N_FFT = 1024
-
-        def pad_or_trim(waveform, length):
-            if waveform.size(-1) < length:
-                pad = length - waveform.size(-1)
-                waveform = torch.nn.functional.pad(waveform, (0, pad))
-            return waveform[..., :length]
-
-        def chunk_audio(waveform):
-            total_len = waveform.size(-1)
-            chunks = []
-            if waveform.size(-1) <= WINDOW_SIZE:
-                chunks = [pad_or_trim(waveform, WINDOW_SIZE)]
-            else:
-                for start in range(0, total_len, STRIDE_SIZE):
-                    end = start + WINDOW_SIZE
-                    chunk = pad_or_trim(waveform[..., start:end], WINDOW_SIZE)
-                    chunks.append(chunk)
-            return chunks
-
-        def extract_features(wav_chunk):
-            feats = T.MelSpectrogram(
-                window_fn=torch.hann_window,
-                sample_rate=TARGET_SR,
-                n_fft=N_FFT,
-                win_length=FRAME_LENGTH,
-                hop_length=FRAME_SHIFT,
-                f_min=MEL_LOW,
-                f_max=MEL_HIGH,
-                n_mels=MEL_BINS,
-                power=1.0,
-            )
-            return feats
-
-        def log_mel_to_uint8(log_mel):
-            db = 20 * torch.log10(torch.clamp(log_mel, min=1e-5))
-            db -= MIN_DB_VALUE
-            db /= MAX_DB_VALUE - MIN_DB_VALUE  # Normalize to [0, 1]
-            img = (db * 255).clamp(0, 255).byte().T  # [mel, time]
-            return img
-
-        def format_for_vit(img_gray):
-            img_rgb = img_gray.unsqueeze(0).repeat(3, 1, 1).float() / 255.0
-            return TV.Resize(TARGET_SIZE, interpolation=TV.InterpolationMode.BILINEAR)(
-                img_rgb
-            )
-
-        batch_size = batch_waveforms.size(0)
-        all_chunks = []
-        max_chunks = 0
-
-        for waveform in batch_waveforms:
-            # [C, T] → mono
-            if waveform.dim() == 1:
-                waveform = waveform.unsqueeze(0)
-            if waveform.size(0) > 1:
-                waveform = waveform.mean(dim=0, keepdim=True)
-
-            chunks = chunk_audio(waveform)
-            images = []
-            for chunk in chunks:
-                mel = extract_features(chunk)
-                img_gray = log_mel_to_uint8(mel)
-                img_rgb = format_for_vit(img_gray)
-                images.append(img_rgb)
-            max_chunks = max(max_chunks, len(images))
-            all_chunks.append(images)
-
-        # Pad chunks so all have same length
-        for i in range(batch_size):
-            num_chunks = len(all_chunks[i])
-            if num_chunks < max_chunks:
-                pad_img = torch.zeros((3, *TARGET_SIZE))
-                all_chunks[i] += [pad_img] * (max_chunks - num_chunks)
-
-        # batch_tensor = torch.stack([seq[0] for seq in all_chunks])  # [B, 3, 224, 224] We just take first chunk for now
-        batch_tensor = torch.stack(
-            [torch.stack(seq).mean(dim=0) for seq in all_chunks]
-        )  # Average over chunks
-        return batch_tensor
 
     def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
         """
