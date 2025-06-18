@@ -7,11 +7,52 @@
 <a href="https://www.pytorchlightning.ai/"><img alt="PyTorch Lightning" src="https://img.shields.io/badge/PyTorch_Lightning-792ee5?logo=pytorch-lightning&logoColor=white"></a>
 <a href="https://hydra.cc/"><img alt="Config: Hydra" src="https://img.shields.io/badge/Config-Hydra-89b8cd"></a>
 
-
-  <img src="https://github.com/DBD-research-group/BirdSet/blob/main/resources/graphical_abstract.png" alt="logo", width=950>
+<div>
+<img src="https://github.com/DBD-research-group/BirdSet/blob/main/resources/graphical_abstract.png" alt="logo", width=950>
 </div>
 
 <br>
+
+<details>
+<summary>Table of Contents</summary>
+
+---
+
+- [User Installation 🐣](#user-installation-🐣)
+- [Experiments](#experiments)
+  - [Results table](#results-table)
+  - [BEANS](#beans)
+    - [Running Linear Probing Experiments on BEANS](#running-linear-probing-experiments-on-beans)
+    - [Running Finetuning Experiments](#running-finetuning-experiments)
+  - [Results](#results)
+  - [BirdSet](#birdset)
+    - [Running Fine-tuning Experiments on BirdSet](#running-fine-tuning-experiments-on-birdset)
+    - [Results](#results-1)
+    - [Running Linear Probing Experiments on BirdSet](#running-linear-probing-experiments-on-birdset)
+    - [Running FewShot Experiments on BirdSet](#running-fewshot-experiments-on-birdset)
+  - [BEANS](#beans-1)
+    - [Running Fine-tuning Experiments on BEANS](#running-fine-tuning-experiments-on-beans)
+    - [Results](#results-2)
+    - [Running Linear Probing Experiments on BEANS](#running-linear-probing-experiments-on-beans-1)
+    - [Running FewShot Experiments on BEANS](#running-fewshot-experiments-on-beans)
+- [Sweeps with WandB](#sweeps-with-wandb)
+  - [Running a Sweep](#running-a-sweep)
+- [Example](#example)
+- [Prepare Data](#prepare-data)
+- [Prepare Model and Start Training](#prepare-model-and-start-training)
+- [Reproduce Baselines](#reproduce-baselines)
+  - [Dedicated Training (DT)](#dedicated-training-dt)
+  - [Medium Training (MT) and Large Training (LT)](#medium-training-mt-and-large-training-lt)
+- [Run experiments](#run-experiments)
+- [Testing](#testing)
+  - [Linting](#linting)
+  - [Integration Tests](#integration-tests)
+- [Q&A](#qa)
+- [Citation](#citation)
+- [Background noise](#background-noise)
+- [Transformations](#transformations)
+---
+</details>
 
 **TL;DR**
 > - Explore our **datasets** shared on Hugging Face 🤗 in the [BirdSet repository](https://huggingface.co/datasets/DBD-research-group/BirdSet).
@@ -56,6 +97,9 @@ poetry install
 poetry shell
 ```
 # Experiments
+
+## Results table 
+We have a [script](projects/biofoundation/results/latex/new_table.py) to automatically create the results table as it is quiet complex and changes often. To run the python script two .csv files named `beans.csv` and `birdset.csv` need to be in the same directory and they can be downloaded from the following [WandB Report](https://wandb.ai/deepbirddetect/BioFoundation/reports/Latex-Table-Data--VmlldzoxMjEyODQ0Ng). The [fill_tables.py](projects/biofoundation/results/latex/fill_tables.py) was used for the older tables and may not work as intended anymore.
 
 ## BEANS
 
@@ -370,7 +414,7 @@ dm = BirdSetDataModule(
         task="multilabel",
         classlimit=500,
         eventlimit=5,
-        sampling_rate=32000,
+        sample_rate=32000,
     ),
 )
 
@@ -469,6 +513,34 @@ Replace `EXPERIMENT_PATH` with the path to the experiment YAML config originatin
 python birdset/train.py experiment="local/HSN/efficientnet.yaml"
 ```
 
+
+## Testing
+### Linting
+Black linting is managed through GitHub Actions, as defined in `.github/workflows/black_linting.yml`. Ensure that you are using the same version of `black[jupyter]` as the tests for optimal linting. That currently is `black[jupyter]==25.1.0`.
+#### How to use it
+Simply push your code to the GitHub repository, and Black linting will run automatically.
+
+### Integration Tests
+Integration tests are executed using the `pytest` package. These tests utilize `subprocess` to run experiments via simple command-line invocations, and `pytest` checks for any errors during execution. Every test is limited to 20 minutes (1.200 seconds), you can cahnge this vlaue in the `pytest.ini`. We categorize the integration tests into two types:
+
+1. **Dataset Tests**: Each dataset is tested on the ConvNext DT model using a `fast_dev_run`. The datasets tested are: HSN, NBP, NES, PER, POW, SNE, SSW, UHH (XCL and XCM are too big for everyday testing)
+
+2. **Model Tests**: Each model (DT) is tested on the HSN dataset using a `fast_dev_run`. The models tested are: AST, ConvNext, EAT, EfficientNet, Wav2Vec2.
+
+#### How to use it
+To execute all tests, run pytest in the root directory of your project.
+
+If you wish to test only the models or datasets, use the following commands:
+
+To test the models: `pytest tests/test_models.py`
+To test the datasets: `pytest tests/test_datasets.py`
+
+You can generate test reports by adding the flags `--html=report.html` or `--junitxml=report.xml` when running pytest.
+
+The default GPU is set to `0`. To specify a different GPU, use the `--device` flag, such as `--device=2`. This enables the Hydra override `trainer.devices=[1,2]` when running the test examples, ensuring that GPUs 2 us used in this case.
+You can specify the number of CPU workers with the `--workers` flag, such as `--workers=4`, the default value is 1.
+
+Alternatively, you can use VS Code’s integrated testing functionality. Simply click the test tube (🧪) icon in the sidebar to access and run your tests interactively.
 
 ## Q&A
 

@@ -13,7 +13,7 @@ network:
   model_name: ${datamodule.embedding_model.model_name}_embedding # Most values are just taken from embedding model as it is the first part
   model_type: waveform
   torch_compile: ${datamodule.embedding_model.torch_compile}
-  sampling_rate: ${datamodule.embedding_model.sampling_rate}
+  sample_rate: ${datamodule.embedding_model.sample_rate}
   normalize_spectrogram: False
   normalize_waveform: False
 

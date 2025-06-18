@@ -1,0 +1,14 @@
+model: 
+  _target_: biofoundation.modules.models.protoCLR.ProtoCLRModel
+  pooling: just_cls
+  num_classes: null
+
+model_name: ProtoCLR
+model_type: waveform
+torch_compile: False
+sample_rate: 16_000
+normalize_spectrogram: False
+normalize_waveform: False
+embedding_size: 384
+length: 6
+

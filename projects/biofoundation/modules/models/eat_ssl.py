@@ -1,14 +1,58 @@
-from typing import Optional, Tuple
+from typing import Literal, Optional
+from biofoundation.modules.models.vit import ViT
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torchaudio.compliance import kaldi
-
-from biofoundation.modules.models.EAT.data2vecmultimodel import Data2VecMultiModel
-from biofoundation.modules.models.birdset_model import BirdSetModel
+import torchaudio
 
 
-class EATSSL(BirdSetModel):
+from transformers import AutoModel
+
+from birdset.configs.model_configs import PretrainInfoConfig
+
+
+class EATPreprocessor(nn.Module):
+    MEAN = torch.tensor(-4.268)
+    STD = torch.tensor(4.569)
+
+    def __init__(self, target_frames: int = 1024):
+        super().__init__()
+        self.target_frames = target_frames
+        self.preemphasis = torchaudio.functional.preemphasis
+        self.melspec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=16000,
+            n_fft=512,
+            win_length=400,
+            hop_length=160,
+            window_fn=torch.hann_window,
+            n_mels=128,
+            f_min=20.0,
+            f_max=8000.0,
+            power=2.0,  # Kaldi default is power
+            norm=None,
+            mel_scale="htk",
+        )
+        # Use log-mel, not dB, for exact Kaldi parity
+
+    def forward(self, x):
+        # Remove DC offset
+        x = x - x.mean(dim=-1, keepdim=True)
+        # Pre-emphasis
+        x = torchaudio.functional.preemphasis(x, coeff=0.97)
+        melspecs = self.melspec(x)
+        melspecs = torch.log(melspecs + 1e-6)
+        n_frames = melspecs.shape[-1]
+        if n_frames < self.target_frames:
+            pad_amt = self.target_frames - n_frames
+            melspecs = F.pad(melspecs, (0, pad_amt), mode="constant", value=0)
+        else:
+            melspec = melspec[..., : self.target_frames]
+        melspecs = melspecs.permute(0, 1, 3, 2)  # (batch, 1, 128, 1024)
+        melspecs = (melspecs - self.MEAN) / (self.STD * 2)
+        return melspecs
+
+
+class EATSSL(ViT):
     """
     Pretrained model for audio classification using the Efficient Audio Transformer (EAT) model.
 
@@ -36,17 +80,19 @@ class EATSSL(BirdSetModel):
 
     def __init__(
         self,
-        checkpoint,
-        multimodel,
-        modality,
         num_classes: int | None,
         embedding_size: int = EMBEDDING_SIZE,
+        checkpoint_path: str = "worstchan/EAT-base_epoch30_finetune_AS2M",
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
         preprocess_in_model: bool = True,
-        classifier: nn.Module | None = None,
+        classifier: nn.Module = None,
+        pretrain_info: PretrainInfoConfig = None,
+        pooling: Literal["just_cls", "attentive", "average"] = "just_cls",
     ) -> None:
+        self.model = None  # Placeholder for the loaded model
+        self.checkpoint_path = checkpoint_path
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
@@ -54,74 +100,23 @@ class EATSSL(BirdSetModel):
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
+            pretrain_info=pretrain_info,
+            pooling=pooling,
+            classifier=classifier,
         )
-        self.checkpoint = checkpoint
-        self.multimodel = multimodel
-        self.modality = modality
-        self.model = None  # Placeholder for the loaded model
-        self.load_model()
 
-        # Define a linear classifier to use on top of the embeddings
-        if classifier is None:
-            self.classifier = nn.Linear(embedding_size, num_classes)
-        else:
-            self.classifier = classifier
-
-        if local_checkpoint:
-            self._load_local_checkpoint()
-
-        # freeze the model
-        if freeze_backbone:
-            for param in self.model.parameters():
-                param.requires_grad = False
-
-    def load_model(self) -> None:
+    def _load_model(self) -> None:
         """
         Load the model by using the Data2VecMultiModel and loading a local checkpoint. The decoder is not needed to extract features so we remove it and ignore its weights from the checkpoint.
         """
-        backbone = Data2VecMultiModel(
-            multimodel=self.multimodel, modality=self.modality, skip_ema=True
-        )
+        return AutoModel.from_pretrained(self.checkpoint_path, trust_remote_code=True)
 
-        checkpoint = torch.load(self.checkpoint)["model"]
-        checkpoint = {k.replace("model.", ""): v for k, v in checkpoint.items()}
-        checkpoint = {
-            k.replace("modality_encoders.IMAGE", "modality_encoder"): v
-            for k, v in checkpoint.items()
-        }
-
-        missing_keys, unexpected_keys = backbone.load_state_dict(
-            checkpoint, strict=False
-        )
-        print(f"Missing keys: {missing_keys}")
-        print(f"Unexpected keys: {unexpected_keys}")
-        # We don't need the decoder so it is fine that the keys are missing
-        backbone.remove_pretrain_components()
-        self.model = backbone
-
-    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+    def _load_preprocessor(self) -> nn.Module:
         """
-        Preprocesses the input values by applying mel-filterbank transformation. Similar as function for AudioMae, ConvNeXt and SSAST.
-        Args:
-            input_values (torch.Tensor): Input tensor of shape (batch_size, num_samples).
-        Returns:
-            torch.Tensor: Preprocessed tensor of shape (batch_size, 1, num_mel_bins, num_frames).
+        Load the preprocessor for the model.
+        This is a Kaldi-like Mel spectrogram extractor.
         """
-        device = input_values.device
-        melspecs = []
-        for waveform in input_values:
-            melspec = kaldi.fbank(
-                waveform, htk_compat=True, window_type="hanning", num_mel_bins=128
-            )  # shape (n_frames, 128)
-            if melspec.shape[0] < 1024:
-                melspec = F.pad(melspec, (0, 0, 0, 1024 - melspec.shape[0]))
-            else:
-                melspec = melspec[:1024]
-            melspecs.append(melspec)
-        melspecs = torch.stack(melspecs).to(device)
-        melspecs = melspecs.unsqueeze(1)  # shape (batch_size, 1, 128, 1024)
-        melspecs = (melspecs - self.MEAN) / (self.STD * 2)
-        return melspecs
+        return EATPreprocessor()
 
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
@@ -136,31 +131,16 @@ class EATSSL(BirdSetModel):
         Returns:
             torch.Tensor: The output of the classifier.
         """
-        embeddings = self.get_embeddings(input_values)
+        if self.preprocess_in_model:
+            input_values = self._preprocess(input_values)
+        if self.classifier is not None:
+            embeddings = self.get_embeddings(input_values)
+            logits = self.classifier(embeddings)
+        else:
+            logits = self.model(input_values)
 
-        return self.classifier(embeddings)
+        return logits
 
     def get_embeddings(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        """
-        Get the embeddings and logits from the AUDIOMAE model.
-
-        Args:
-            input_tensor (torch.Tensor): The input tensor for the model.
-
-        Returns:
-            torch.Tensor: The embeddings from the model.
-        """
-        if self.preprocess_in_model:
-            input_values = self.preprocess(input_tensor)
-
-        # Utterance level here
-        result = self.model(
-            input_values,
-            features_only=True,
-            padding_mask=None,
-            mask=False,
-            remove_extra_tokens=False,
-        )
-        embeddings = result["x"]
-        cls_state = embeddings[:, 0, :]
-        return cls_state
+        features = self.model.extract_features(input_tensor)
+        return self.pool(features, self.pooling_type)

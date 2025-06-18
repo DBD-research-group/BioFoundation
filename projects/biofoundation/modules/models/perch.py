@@ -10,10 +10,10 @@ from torch import nn
 
 from birdset.configs import PretrainInfoConfig
 
-from biofoundation.modules.models.birdset_model import BirdSetModel
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
-class PerchModel(BirdSetModel):
+class PerchModel(BioFoundationModel):
     """
     A PyTorch model for bird vocalization classification, integrating a TensorFlow Hub model.
 

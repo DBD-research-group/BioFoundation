@@ -1,12 +1,12 @@
 model: 
   _target_: biofoundation.modules.models.beats.BEATsModel
+  checkpoint_path: '/workspace/models/beats/beats_naturelm.pt'
   num_classes: null
-
 
 model_name: BEATs
 model_type: waveform
 torch_compile: False
-sampling_rate: 16_000
+sample_rate: 16_000
 normalize_spectrogram: False
 normalize_waveform: False
 embedding_size: 768

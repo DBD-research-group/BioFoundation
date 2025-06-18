@@ -74,15 +74,15 @@ class EmbeddingDataModule(BaseDataModuleHF):
             self.device
         )  # Move Model to GPU
         self.embedding_model.eval()  # Set the model to evaluation mode
-        self.sampling_rate = embedding_model.sampling_rate
+        self.sample_rate = embedding_model.sample_rate
         self.max_length = embedding_model.length
         self.decoder = decoder
         self.embeddings_save_path = os.path.join(
             self.dataset_config.data_dir,
-            f"{self.dataset_config.dataset_name}_processed_embedding_model_{self.embedding_model_name}_{self.average}_{self.sampling_rate}_{self.max_length}",
+            f"{self.dataset_config.dataset_name}_processed_embedding_model_{self.embedding_model_name}_{self.average}_{self.sample_rate}_{self.max_length}",
         )
         log.info(
-            f"Using embedding model:{embedding_model.model_name} (Sampling Rate:{self.sampling_rate}, Window Size:{self.max_length})"
+            f"Using embedding model:{embedding_model.model_name} (Sampling Rate:{self.sample_rate}, Window Size:{self.max_length})"
         )
 
     def prepare_data(self):
@@ -277,7 +277,7 @@ class EmbeddingDataModule(BaseDataModuleHF):
                     sample = self.decoder(sample)
                     sample["audio"] = sample["audio"][0]
                     sample["labels"] = sample["labels"][0]
-                    sample["audio"]["sampling_rate"] = sample["audio"]["samplerate"]
+                    sample["audio"]["sample_rate"] = sample["audio"]["samplerate"]
 
                 embedding = self._get_embedding(sample["audio"])
                 # Update the sample with the new embedding
@@ -288,7 +288,7 @@ class EmbeddingDataModule(BaseDataModuleHF):
 
         def get_new_fingerprint(split):
             old_fingerprint = dataset[split]._fingerprint
-            return f"{old_fingerprint}_embedding_model_{self.embedding_model_name}_{self.average}_{self.sampling_rate}_{self.max_length}"
+            return f"{old_fingerprint}_embedding_model_{self.embedding_model_name}_{self.average}_{self.sample_rate}_{self.max_length}"
 
         # Apply the transformation to each split in the dataset
         for split in dataset.keys():
@@ -316,25 +316,25 @@ class EmbeddingDataModule(BaseDataModuleHF):
         waveform = torch.tensor(audio["array"], dtype=torch.float32).to(
             self.device
         )  # Get waveform audio and move to GPU
-        dataset_sampling_rate = audio["sampling_rate"]
+        dataset_sample_rate = audio["sample_rate"]
         # Resample audio is done in load_data()
 
         # Zero-padding
         audio = self._zero_pad(waveform)
 
         # Check if audio is too long
-        if waveform.shape[0] > self.max_length * self.sampling_rate:
+        if waveform.shape[0] > self.max_length * self.sample_rate:
             if self.average:
                 return self._frame_and_average(waveform)
             else:
-                audio = audio[: self.max_length * self.sampling_rate]
+                audio = audio[: self.max_length * self.sample_rate]
                 return self.embedding_model.get_embeddings(audio.view(1, 1, -1))
         else:
             return self.embedding_model.get_embeddings(audio.view(1, 1, -1))
 
     # Zero-padding function
     def _zero_pad(self, audio):
-        desired_num_samples = self.max_length * self.sampling_rate
+        desired_num_samples = self.max_length * self.sample_rate
         current_num_samples = audio.shape[0]
         padding = desired_num_samples - current_num_samples
         if padding > 0:
@@ -344,8 +344,8 @@ class EmbeddingDataModule(BaseDataModuleHF):
     # Average multiple embeddings function
     def _frame_and_average(self, audio):
         # Frame the audio
-        frame_size = self.max_length * self.sampling_rate
-        hop_size = self.max_length * self.sampling_rate
+        frame_size = self.max_length * self.sample_rate
+        hop_size = self.max_length * self.sample_rate
         frames = audio.unfold(0, frame_size, hop_size)
 
         # Generate embeddings for each frame
