@@ -30,7 +30,7 @@ def format_name(name):
     if "-" in name:
         parts = name.split("-")
         name = (
-            "\\rotatebox[origin=c]{90}{\\begin{tabular}{@{}c@{}}"
+            "\\rotatebox[origin=c]{90}{\\renewcommand{\\arraystretch}{1}\\begin{tabular}{@{}c@{}}"
             + " \\\\ ".join(parts)
             + "\\end{tabular}}\n"
         )
@@ -159,7 +159,7 @@ def beans_table(path, models):
 
 
 # === BirdSet ===
-def birdset_table(models, model_names, path, path_beans):
+def birdset_table(models, model_names, path, path_beans, finetuning):
     df = pd.read_csv(path, sep=",")
 
     # Rename for convenience
@@ -193,9 +193,12 @@ def birdset_table(models, model_names, path, path_beans):
         os.remove(output_path)
 
     # === Top table part ===
+    stretch = 1 if finetuning else 1.5
     with open(output_path, "a") as f:
         f.write(
-            "\\renewcommand{\\arraystretch}{1} % Increase row height\n"
+            "\\renewcommand{\\arraystretch}{"
+            + str(stretch)
+            + "} % Increase row height\n"
             "\\setlength{\\tabcolsep}{2pt}\n\n"
             "\\begin{tabular}{>{\\centering\\arraybackslash}p{0.7cm} p{1.5cm} | ccccc | >{\centering\\arraybackslash}p{0.8cm} !{\\vrule width 1.3pt} cccccccc | >{\centering\\arraybackslash}p{0.8cm}}\n"
             "    \\toprule\n"
@@ -299,8 +302,9 @@ def birdset_table(models, model_names, path, path_beans):
         for i, model in enumerate(models):
 
             # Write LaTeX to a file
+            num_rows = 3 if finetuning else 2
             f.write(
-                f"\\multirow{{3}}{{*}}{{\\textbf{{{format_name(model_names[i])}}}}} & {{Linear}} & "
+                f"\\multirow{{{num_rows}}}{{*}}{{\\textbf{{{format_name(model_names[i])}}}}} & {{Linear}} & "
                 + " & ".join(all_top1_lp_beans[i])
                 + f" & {all_avg_top1_lp_beans[i]} &"
                 + " & ".join(all_cmap_lp[i])
@@ -314,14 +318,14 @@ def birdset_table(models, model_names, path, path_beans):
                 + " & ".join(all_cmap_ap[i])
                 + f" & {all_avg_cmap_ap[i]} \\\\ \n"
             )
-
-            f.write(
-                f" & {{Finetuned}} & "
-                + " & ".join(all_top1_ft_beans[i])
-                + f" & {all_avg_top1_ft_beans[i]} &"
-                + " & ".join(all_cmap_ft[i])
-                + f" & {all_avg_cmap_ft[i]} \\\\ \n"
-            )
+            if finetuning:
+                f.write(
+                    f" & {{Finetuned}} & "
+                    + " & ".join(all_top1_ft_beans[i])
+                    + f" & {all_avg_top1_ft_beans[i]} &"
+                    + " & ".join(all_cmap_ft[i])
+                    + f" & {all_avg_cmap_ft[i]} \\\\ \n"
+                )
 
             if model != models[-1]:
                 f.write(f"\\hline \n")
@@ -367,5 +371,13 @@ MODEL_NAMES = [
 ]  # These names will appear in the table split at "-" ordered the same as MODELS
 CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
+FINETUNING = False  # Set to True if you want to include finetuning results
 
-birdset_table(MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS)
+# Print summary of settings
+print("Summary of settings:")
+print(f"Models: {len(MODELS)}")
+for model, model_name in zip(MODELS, MODEL_NAMES):
+    print(f"  {model} -> {model_name}")
+print(f"Finetuning: {FINETUNING}")
+
+birdset_table(MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING)
