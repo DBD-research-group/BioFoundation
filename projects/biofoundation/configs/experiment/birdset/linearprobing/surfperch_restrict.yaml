@@ -1,0 +1,26 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - birdset/linearprobing/linearprobing_config.yaml 
+  - override /module/network: perch_inference.yaml  
+
+train: False
+
+logger:
+  wandb:
+    name: ${module.network.model_name}_restricted_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time}
+
+module:
+  network:
+    model: 
+      classifier : null
+      restrict_logits: True
+      label_path: ${paths.root_dir}/resources/perch/label_updated.csv
+
+datamodule:
+  dataset:
+    val_split: null
+    class_weights_loss: null
+    class_weights_sampler: null
+    classlimit: null
+    eventlimit: null

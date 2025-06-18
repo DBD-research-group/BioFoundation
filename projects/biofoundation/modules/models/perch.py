@@ -58,7 +58,7 @@ class PerchModel(BioFoundationModel):
             num_classes: The number of output classes for the classifier.
             tfhub_version: The version identifier of the TensorFlow Hub model to load.
             label_path: Path to a CSV file containing the class information for the Perch model.
-            train_classifier: If True, a classifier is added on top of the model embeddings.
+            train_classifier: This was replaced by classifier=None
             restrict_logits: If True, output logits are restricted to target classes based on dataset info.
             pretrain_info: A dictionary containing information about the pretraining of the model.
             gpu_to_use: The GPU index to use for the model.
