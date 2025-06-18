@@ -188,18 +188,6 @@ class Vit_iNatSoundModel(ViT):
                 n_mels=MEL_BINS,
                 power=1.0,
             )
-            feats = kaldi.fbank(
-                wav_chunk,
-                num_mel_bins=MEL_BINS,
-                sample_frequency=TARGET_SR,
-                frame_length=FRAME_LENGTH,
-                frame_shift=FRAME_SHIFT,
-                dither=0.0,
-                low_freq=MEL_LOW,
-                high_freq=MEL_HIGH,
-                use_energy=False,
-                window_type="hanning",
-            )
             return feats
 
         def log_mel_to_uint8(log_mel):
