@@ -108,17 +108,6 @@ class Vit_iNatSoundModel(ViT):
             logits = self.model(input_values)
 
         return logits
-        self.mel_spectrogram = T.MelSpectrogram(
-            window_fn=torch.hann_window,
-            sample_rate=22050,
-            n_fft=1024,
-            win_length=256,
-            hop_length=32,
-            f_min=50,
-            f_max=11025,
-            n_mels=298,
-            power=1.0,
-        )
 
     def preprocess2(self, input_values: torch.Tensor) -> torch.Tensor:
         # faulty
@@ -151,12 +140,6 @@ class Vit_iNatSoundModel(ViT):
         MAX_DB_VALUE = 0.0
         MIN_DB_VALUE = -100.0
         N_FFT = 1024
-
-        def resample_if_needed(waveform, orig_sr):  #! Brauch man nicht
-            if orig_sr != TARGET_SR:
-                resampler = T.Resample(orig_sr, TARGET_SR)
-                waveform = resampler(waveform)
-            return waveform
 
         def pad_or_trim(waveform, length):
             if waveform.size(-1) < length:
@@ -214,7 +197,6 @@ class Vit_iNatSoundModel(ViT):
             if waveform.size(0) > 1:
                 waveform = waveform.mean(dim=0, keepdim=True)
 
-            waveform = resample_if_needed(waveform, sample_rate)
             chunks = chunk_audio(waveform)
             images = []
             for chunk in chunks:
