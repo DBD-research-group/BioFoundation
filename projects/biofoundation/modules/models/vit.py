@@ -53,32 +53,17 @@ class ViTModel(BirdSetModel):
             window_fn=torch.hann_window,
             sample_rate=22050,
             n_fft=1024,
-            win_length=512,
-            hop_length=128,
+            win_length=256,
+            hop_length=32,
             f_min=50,
             f_max=11025,
-            n_mels=128,
-            power=2.0,
+            n_mels=298,
+            power=1.0,
         )
 
         self.db_transform = T.AmplitudeToDB(
             top_db=80,
             stype="power",
-        )
-
-        self.converter = AudioToImageConverter(
-            freq_scale="mel",
-            samplerate=22050,
-            fft_length=1024,
-            window_length_samples=256,
-            hop_length_samples=32,
-            mel_bands=128,
-            mel_min_hz=50,
-            mel_max_hz=8000,
-            max_db_value=0.0,
-            min_db_value=-80.0,
-            target_height=224,
-            target_width=224,
         )
 
     def load_model(self) -> None:
@@ -107,31 +92,18 @@ class ViTModel(BirdSetModel):
             torch.Tensor: The output of the classifier.
         """
         # input_values = self.duplicate_channels(input_values)
-        spectograms = self.preprocess4(input_values)
+        spectograms = self.preprocess(input_values)
         return self.model(spectograms)
 
-    def preprocess4(self, input_values):
-        input_values = input_values.detach().cpu().numpy()
-        spec = self.converter._samples_to_magnitude_spectrogram(input_values)
+    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+        max_db_value = 0.0
+        min_db_value = -100.0
 
-        if self.converter.freq_scale == "mel":
-            spec = self.converter._mel_scale(spec)
-
-        spec = self.converter._magnitude_to_db(spec)
-        spec = self.converter._db_to_uint8(spec)
-        spec = self.converter._orientate(spec)
-        spec, _, _ = self.converter._resize(spec)
-
-        spec_tensor = torch.tensor(spec, dtype=torch.float32, device="cuda")
-
-        return spec_tensor
-
-    def preprocess3(self, input_values: torch.Tensor) -> torch.Tensor:
         mel_db = self.mel_spectrogram(input_values)
         # mel_db = self.db_transform(mel_spec) breaks the training success
 
-        mel_db_normalized = (mel_db - mel_db.min()) / (
-            mel_db.max() - mel_db.min() + 1e-10
+        mel_db_normalized = (mel_db - max_db_value) / (
+            max_db_value - min_db_value + 1e-10
         )
         mel_img = (mel_db_normalized * 255).round().clamp(0, 255).to(torch.float32)
         mel_img = F.interpolate(
@@ -139,106 +111,3 @@ class ViTModel(BirdSetModel):
         )
         mel_img = mel_img.repeat(1, 3, 1, 1)
         return mel_img
-
-    def preprocess2(self, input_values: torch.Tensor) -> torch.Tensor:
-        input_values = F.interpolate(
-            input_values, size=(224, 224), mode="bilinear", align_corners=False
-        )
-        input_values = input_values.repeat(1, 3, 1, 1)
-        return input_values
-
-    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
-
-        device = input_values.device
-        melspecs = []
-        target_length = 512
-
-        for waveform in input_values:
-            if waveform.shape[-1] < 512:
-                waveform = F.pad(waveform, (0, 512 - waveform.shape[-1]))
-            melspec = kaldi.fbank(
-                waveform,
-                window_type="hanning",
-                low_freq=50,
-                high_freq=11025,
-                sample_frequency=22050,
-                num_mel_bins=128,
-            )
-
-            # Pad or crop mel spectrogram to fixed width (time dimension = 512)
-            if melspec.shape[0] < target_length:
-                pad_amount = target_length - melspec.shape[0]
-                melspec = F.pad(melspec, (0, 0, 0, pad_amount))
-            else:
-                melspec = melspec[:target_length, :]
-
-            # Normalize the dicibel converted mel spectrogram to the range [0, 255]
-            epsilon = 1e-10  # Avoid log(0)
-            melspec = 10 * torch.log10(melspec + epsilon)
-
-            # Normalize to [0, 255] with fixed decibel range
-            min_db = -80
-            max_db = 0
-            melspec = (melspec - min_db) / (max_db - min_db)
-            melspec = torch.clamp(melspec, 0, 1) * 255
-
-            # Convert to uint8
-            melspec = melspec.to(torch.uint8).to(torch.float32)
-
-            melspecs.append(melspec)
-
-        melspecs = torch.stack(melspecs).to(device)
-        melspecs = melspecs.unsqueeze(1)
-
-        # Resize the tensor to [32, 1, 224, 224]
-        melspecs = F.interpolate(
-            melspecs, size=(224, 224), mode="bilinear", align_corners=False
-        )
-
-        # convert gray scale to 3 channels (RGB)
-        melspecs = melspecs.repeat(1, 3, 1, 1)
-        return melspecs
-
-    # REPLICATING iNAT CODE HERE
-
-    _MEL_BREAK_FREQUENCY_HERTZ = 700.0
-    _MEL_HIGH_FREQUENCY_Q = 1127.0
-
-    def preprocess5(self, input_values: torch.Tensor) -> torch.Tensor:
-        pass
-
-    def mel_to_hertz(mel_values: torch.Tensor) -> torch.Tensor:
-        """
-        Converts frequencies in mel_values from the mel scale to linear scale.
-
-        Args:
-            mel_values (torch.Tensor): Tensor of mel values. Can be on GPU.
-
-        Returns:
-            torch.Tensor: Corresponding linear frequency values.
-        """
-        return _MEL_BREAK_FREQUENCY_HERTZ * (
-            torch.exp(mel_values / _MEL_HIGH_FREQUENCY_Q) - 1.0
-        )
-
-    def hertz_to_mel(hertz_values: torch.Tensor) -> torch.Tensor:
-        """
-        Converts frequencies in hertz_values from linear scale to the mel scale.
-        Args:
-            hertz_values (torch.Tensor): Tensor of frequency values in hertz. Can be on GPU.
-        Returns:
-            torch.Tensor: Corresponding mel values.
-        """
-        return _MEL_HIGH_FREQUENCY_Q * torch.log(
-            1.0 + (hertz_values / _MEL_BREAK_FREQUENCY_HERTZ)
-        )
-
-    def mel_frequencies(self, n_mels=128, fmin=0.0, fmax=11025.0):
-
-        # 'Center freqs' of mel bands - uniformly spaced between limits
-        min_mel = self.hertz_to_mel(fmin)
-        max_mel = self.hertz_to_mel(fmax)
-
-        mels = torch.linspace(min_mel, max_mel, n_mels)
-
-        return self.mel_to_hertz(mels)
