@@ -61,7 +61,8 @@ class Vit_iNatSoundModel(ViT):
             center=False,
             window_fn=torch.hann_window,
         )
-
+        self.max_db_value = 0.0
+        self.min_db_value = -100.0
         # self.model = None
         # self.load_model()
 
@@ -109,32 +110,24 @@ class Vit_iNatSoundModel(ViT):
 
         return logits
 
-    def preprocess_old(self, input_values: torch.Tensor) -> torch.Tensor:
-        max_db_value = 0.0
-        min_db_value = -100.0
-
-        mel_db = self.mel_spectrogram(input_values)
-
-        mel_db_normalized = (mel_db - min_db_value) / (
-            max_db_value - min_db_value + 1e-10
-        )
-        mel_img = (mel_db_normalized * 255).round().clamp(0, 255).to(torch.float32)
-        mel_img = F.interpolate(
-            mel_img, size=(224, 224), mode="bilinear", align_corners=False
-        )
-        mel_img = mel_img.repeat(1, 3, 1, 1)
-        return mel_img
-
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
         if input_values.ndim == 2:
             input_values = input_values.unsqueeze(1)  # (B, 1, T)
 
         mel_spec = self.mel_spectrogram(input_values)  # (B, 1, n_mels, T)
-        mel_spec = mel_spec + 1e-10
-        mel_spec = torch.log10(mel_spec)
-        mel_spec = torch.clamp(mel_spec, min=-4.0, max=4.0)
-        mel_spec = (mel_spec + 4.0) / 8.0  # normalize to [0,1]
+        # convert to mel to db
+        mel_spec = 20 * torch.log10(torch.clamp(mel_spec, min=1e-10))
+        mel_spec = torch.clamp(
+            mel_spec, min=self.min_db_value, max=self.max_db_value
+        )  # (B, 1, n_mels, T)
+        # normalize to [0, 255]
+        mel_spec = (mel_spec - self.min_db_value) / (
+            self.max_db_value - self.min_db_value
+        )
+        mel_spec = mel_spec * 255.0
+        mel_spec = mel_spec.round().clamp(0, 255).to(torch.float32)
 
+        # resize
         mel_spec = mel_spec.squeeze(1)  # (B, n_mels, T)
         mel_spec = mel_spec.unsqueeze(1)  # (B, 1, H, W)
         mel_spec = F.interpolate(
