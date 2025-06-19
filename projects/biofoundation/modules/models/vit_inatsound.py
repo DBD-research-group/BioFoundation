@@ -10,6 +10,7 @@ import torchaudio.transforms as T
 from torchaudio.compliance import kaldi
 from birdset.configs.model_configs import PretrainInfoConfig
 import timm
+
 # from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
@@ -46,19 +47,7 @@ class Vit_iNatSoundModel(ViT):
             pooling=pooling,
             classifier=classifier,
         )
-       
-        '''self.mel_spectrogram = T.MelSpectrogram(
-            window_fn=torch.hann_window,
-            sample_rate=22050,
-            n_fft=1024,
-            win_length=256,
-            hop_length=32,
-            f_min=50,
-            f_max=11025,
-            n_mels=298,
-            power=1.0,
-        )'''
-    
+
         self.mel_spectrogram = T.MelSpectrogram(
             sample_rate=22050,
             n_fft=1024,
@@ -67,25 +56,24 @@ class Vit_iNatSoundModel(ViT):
             f_min=0,
             f_max=11025,
             n_mels=128,
-            power=2.0,
+            power=1.0,
             normalized=False,
-            center=True,
-            pad_mode="reflect",
+            center=False,
             window_fn=torch.hann_window,
         )
 
         # self.model = None
         # self.load_model()
 
-        #self._load_model()
+        # self._load_model()
 
     def _load_model(self) -> nn.Module:
         model = timm.create_model(
-        'vit_base_patch16_224', 
-        pretrained=True,  
+            "vit_base_patch16_224",
+            pretrained=True,
         )
-        #model = models.vit_b_16(weights=None)
-        #checkpoint_path = "/workspace/models/vit/vit_single_mixup.pt"
+        # model = models.vit_b_16(weights=None)
+        # checkpoint_path = "/workspace/models/vit/vit_single_mixup.pt"
         state_dict = torch.load(self.checkpoint_path)
 
         keys_to_remove = [key for key in state_dict.keys() if "heads.head" in key]
@@ -127,7 +115,7 @@ class Vit_iNatSoundModel(ViT):
 
         mel_db = self.mel_spectrogram(input_values)
 
-        mel_db_normalized = (mel_db - max_db_value) / (
+        mel_db_normalized = (mel_db - min_db_value) / (
             max_db_value - min_db_value + 1e-10
         )
         mel_img = (mel_db_normalized * 255).round().clamp(0, 255).to(torch.float32)
@@ -136,6 +124,7 @@ class Vit_iNatSoundModel(ViT):
         )
         mel_img = mel_img.repeat(1, 3, 1, 1)
         return mel_img
+
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
         if input_values.ndim == 2:
             input_values = input_values.unsqueeze(1)  # (B, 1, T)
@@ -148,10 +137,11 @@ class Vit_iNatSoundModel(ViT):
 
         mel_spec = mel_spec.squeeze(1)  # (B, n_mels, T)
         mel_spec = mel_spec.unsqueeze(1)  # (B, 1, H, W)
-        mel_spec = F.interpolate(mel_spec, size=(224, 224), mode="bilinear", align_corners=False)
+        mel_spec = F.interpolate(
+            mel_spec, size=(224, 224), mode="bilinear", align_corners=False
+        )
         mel_spec = mel_spec.repeat(1, 3, 1, 1)  # (B, 3, 224, 224)
         return mel_spec
-
 
     def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
         """
