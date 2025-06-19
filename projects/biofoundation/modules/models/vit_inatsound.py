@@ -1,16 +1,16 @@
 # from biofoundation.modules.models.birdset_model import BirdSetModel
-from torch import nn
-import torchvision.models as models
-import torch
-import torch.nn.functional as F
-from torchaudio.compliance import kaldi
-import torchaudio.transforms as T
-import torchvision.transforms as TV
-
-# from biofoundation.modules.models.biofoundation_model import BioFoundationModel
-from biofoundation.modules.models.vit import ViT
-from birdset.configs.model_configs import PretrainInfoConfig
 from typing import Literal, Optional, Tuple
+from biofoundation.modules.models.vit import ViT
+import torch
+from torch import nn
+import torch.nn.functional as F
+import torchvision.models as models
+import torchvision.transforms as TV
+import torchaudio.transforms as T
+from torchaudio.compliance import kaldi
+from birdset.configs.model_configs import PretrainInfoConfig
+import timm
+# from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 
 class Vit_iNatSoundModel(ViT):
@@ -24,6 +24,7 @@ class Vit_iNatSoundModel(ViT):
         self,
         num_classes: int,
         embedding_size: int = EMBEDDING_SIZE,
+        checkpoint_path: str = "/workspace/models/vit/vit_single_mixup.pt",
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
@@ -32,16 +33,21 @@ class Vit_iNatSoundModel(ViT):
         pretrain_info: PretrainInfoConfig = None,
         pooling: Literal["just_cls", "attentive", "average"] = "just_cls",
     ) -> None:
+        self.model = None  # Placeholder for the loaded model
+        self.checkpoint_path = checkpoint_path
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
             local_checkpoint=local_checkpoint,
             load_classifier_checkpoint=load_classifier_checkpoint,
+            freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
+            pretrain_info=pretrain_info,
             pooling=pooling,
+            classifier=classifier,
         )
-
-        self.mel_spectrogram = T.MelSpectrogram(
+       
+        '''self.mel_spectrogram = T.MelSpectrogram(
             window_fn=torch.hann_window,
             sample_rate=22050,
             n_fft=1024,
@@ -51,30 +57,36 @@ class Vit_iNatSoundModel(ViT):
             f_max=11025,
             n_mels=298,
             power=1.0,
+        )'''
+    
+        self.mel_spectrogram = T.MelSpectrogram(
+            sample_rate=22050,
+            n_fft=1024,
+            win_length=512,
+            hop_length=128,
+            f_min=0,
+            f_max=11025,
+            n_mels=128,
+            power=2.0,
+            normalized=False,
+            center=True,
+            pad_mode="reflect",
+            window_fn=torch.hann_window,
         )
 
-        self.num_classes = num_classes
         # self.model = None
         # self.load_model()
 
-        if classifier is None:
-            self.model.heads.head = nn.Linear(embedding_size, num_classes)
-        else:
-            self.model.heads.head = classifier
-
-        if local_checkpoint:
-            self._load_local_checkpoint()
-
-        if freeze_backbone:
-            for name, param in self.model.named_parameters():
-                if "heads.head" not in name:
-                    param.requires_grad = False
+        #self._load_model()
 
     def _load_model(self) -> nn.Module:
-        model = models.vit_b_16(weights=None)
-
-        checkpoint_path = "/workspace/models/vit/vit_single_mixup.pt"
-        state_dict = torch.load(checkpoint_path)
+        model = timm.create_model(
+        'vit_base_patch16_224', 
+        pretrained=True,  
+        )
+        #model = models.vit_b_16(weights=None)
+        #checkpoint_path = "/workspace/models/vit/vit_single_mixup.pt"
+        state_dict = torch.load(self.checkpoint_path)
 
         keys_to_remove = [key for key in state_dict.keys() if "heads.head" in key]
         for key in keys_to_remove:
@@ -109,7 +121,7 @@ class Vit_iNatSoundModel(ViT):
 
         return logits
 
-    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+    def preprocess_old(self, input_values: torch.Tensor) -> torch.Tensor:
         max_db_value = 0.0
         min_db_value = -100.0
 
@@ -124,6 +136,22 @@ class Vit_iNatSoundModel(ViT):
         )
         mel_img = mel_img.repeat(1, 3, 1, 1)
         return mel_img
+    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+        if input_values.ndim == 2:
+            input_values = input_values.unsqueeze(1)  # (B, 1, T)
+
+        mel_spec = self.mel_spectrogram(input_values)  # (B, 1, n_mels, T)
+        mel_spec = mel_spec + 1e-10
+        mel_spec = torch.log10(mel_spec)
+        mel_spec = torch.clamp(mel_spec, min=-4.0, max=4.0)
+        mel_spec = (mel_spec + 4.0) / 8.0  # normalize to [0,1]
+
+        mel_spec = mel_spec.squeeze(1)  # (B, n_mels, T)
+        mel_spec = mel_spec.unsqueeze(1)  # (B, 1, H, W)
+        mel_spec = F.interpolate(mel_spec, size=(224, 224), mode="bilinear", align_corners=False)
+        mel_spec = mel_spec.repeat(1, 3, 1, 1)  # (B, 3, 224, 224)
+        return mel_spec
+
 
     def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
         """
@@ -137,5 +165,5 @@ class Vit_iNatSoundModel(ViT):
         """
         embeddings = self.model.forward_features(
             input_values
-        )  # shape (batch_size, 513, 768)
+        )  # shape (batch_size, 197, 768)
         return self.pool(embeddings, self.pooling_type)
