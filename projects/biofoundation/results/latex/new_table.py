@@ -346,7 +346,7 @@ MODELS = [
     "BEATs_NatureLM",
     "biolingual",
     "bird_aves",
-    "bird_mae",
+    "birdmae",
     "convnext_bs",
     "eat_ssl",
     "perch",
