@@ -1,10 +1,11 @@
+from email.mime import audio
 import torch
 import torch.nn as nn
 from transformers import ClapModel, ClapProcessor
 
 from birdset.configs import PretrainInfoConfig
 from typing import Optional, Literal
-
+from transformers import pipeline
 from biofoundation.modules.models.vit import ViT
 from birdset.utils import pylogger
 
@@ -32,7 +33,7 @@ class BioLingualClassifier(ViT):
         self,
         num_classes: int = None,
         embedding_size: int = EMBEDDING_SIZE,
-        checkpoint: str = "laion/clap-htsat-unfused",
+        checkpoint: str = "davidrrobinson/BioLingual",
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
@@ -90,8 +91,9 @@ class BioLingualClassifier(ViT):
             return self.processor(
                 audios=input_values.cpu().numpy(),
                 return_tensors="pt",
-                sample_rate=48000,
-            ).input_features.to(input_values.device)
+                sampling_rate=48000,
+            )  # .input_features.to(input_values.device)
+
         else:
             return input_values
 
@@ -104,9 +106,24 @@ class BioLingualClassifier(ViT):
 
     def get_embeddings(self, input_tensor) -> torch.Tensor:
         inputs = self._preprocess(input_tensor)
-        audio_embed = self.model.get_audio_features(
-            inputs, output_hidden_states=True, return_dict=True
+        inputs["input_features"] = inputs["input_features"].to(self.device)
+        output = self.model.audio_model(
+            **inputs, output_hidden_states=True, return_dict=True
         )
-        print(audio_embed.shape)
+        print(output.keys())
+        # 3. Extract what you need
+        embeddings = output.last_hidden_state  # shape: [1, seq_len, hidden_dim]
+        all_hidden_states = output.hidden_states  # list of tensors from each layer
+        pooled_output = output.pooler_output  # typically [CLS]-style pooled output
+        print("Last hidden state shape:", embeddings.shape)
+        print("Pooled output shape:", pooled_output.shape)
+        print("Hidden states:", all_hidden_states[0].shape)
+        hidden = embeddings  # shape: [B, D, H, W]
+        B, D, H, W = hidden.shape
+
+        # Flatten the 2D patch grid into a sequence
+        hidden = hidden.permute(0, 2, 3, 1).reshape(B, H * W, D)
+
+        # print(audio_embed.shape)
         # audio_embed doesnt return hidden states for some reason
-        return audio_embed
+        return self.pool(hidden, self.pooling_type)
