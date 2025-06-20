@@ -12,13 +12,6 @@ module:
 datamodule:
   transforms: 
     _target_: biofoundation.datamodule.components.biolingual_transforms.BiolingualTransforms
-
   loaders:
     train:
-      num_workers: 10
- 
-    valid:
-      num_workers: 10
-   
-    test:
-      num_workers: 10
+      batch_size: 64

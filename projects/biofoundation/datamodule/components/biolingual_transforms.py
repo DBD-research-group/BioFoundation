@@ -54,6 +54,6 @@ class BiolingualTransforms(BirdSetTransformsWrapper):
         input_values = self.processor(
             audios=input_values.cpu().numpy(),
             return_tensors="pt",
-            sample_rate=48000,
+            sampling_rate=48000,
         ).input_features
         return input_values, labels

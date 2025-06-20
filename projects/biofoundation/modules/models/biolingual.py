@@ -2,14 +2,16 @@ import torch
 import torch.nn as nn
 from transformers import ClapModel, ClapProcessor
 
-from typing import Tuple
 from birdset.configs import PretrainInfoConfig
-from typing import Optional
+from typing import Optional, Literal
 
-from biofoundation.modules.models.biofoundation_model import BioFoundationModel
+from biofoundation.modules.models.vit import ViT
+from birdset.utils import pylogger
+
+log = pylogger.get_pylogger(__name__)
 
 
-class BioLingualClassifier(BioFoundationModel):
+class BioLingualClassifier(ViT):
     """
     Pretrained model for audio classification using the Biolingual model.
 
@@ -38,6 +40,9 @@ class BioLingualClassifier(BioFoundationModel):
         classifier: nn.Module = None,
         pretrain_info: PretrainInfoConfig = None,
         device: int | str = "cuda",
+        pooling: Literal[
+            "just_cls", "attentive", "attentive_old", "average", "mean"
+        ] = "just_cls",
     ):
         """
         Note: Either num_classes or pretrain_info must be given
@@ -48,37 +53,32 @@ class BioLingualClassifier(BioFoundationModel):
             cache_dir: specified cache dir to save model files at
             pretrain_info: hf_path and hf_name of info will be used to infer if num_classes is None
         """
+        self.checkpoint_path = checkpoint
+        self.device = device
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
+            classifier=classifier,
             local_checkpoint=local_checkpoint,
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
             pretrain_info=pretrain_info,
+            pooling=pooling,
         )
 
-        self.checkpoint = checkpoint
-        self.device = device
+    def _load_model(self) -> None:
+        """
+        Load the model from shared storage.
+        """
+        log.info(f">> Loading model from {self.checkpoint_path}")
+        model = ClapModel.from_pretrained(self.checkpoint_path).to(self.device)
 
-        self.model = ClapModel.from_pretrained(checkpoint).to(self.device)
-
-        if classifier is None:
-            self.classifier = nn.Linear(embedding_size, num_classes)
-        else:
-            self.classifier = classifier
-
-        if preprocess_in_model:
+        if self.preprocess_in_model:
             self.processor = ClapProcessor.from_pretrained(
-                checkpoint
+                self.checkpoint_path
             )  # This takes too much memory if loaded in addition to one in transforms
-
-        if local_checkpoint:
-            self._load_local_checkpoint()
-
-        if freeze_backbone:
-            for param in self.model.parameters():
-                param.requires_grad = False
+        return model
 
     def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
         """
@@ -107,5 +107,6 @@ class BioLingualClassifier(BioFoundationModel):
         audio_embed = self.model.get_audio_features(
             inputs, output_hidden_states=True, return_dict=True
         )
+        print(audio_embed.shape)
         # audio_embed doesnt return hidden states for some reason
         return audio_embed
