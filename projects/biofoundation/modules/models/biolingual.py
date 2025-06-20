@@ -6,13 +6,18 @@ from transformers import ClapModel, ClapProcessor
 from birdset.configs import PretrainInfoConfig
 from typing import Optional, Literal
 from transformers import pipeline
-from biofoundation.modules.models.vit import ViT
+from biofoundation.modules.models.Pooling import (
+    AttentivePooling,
+    AttentivePooling_old,
+    AveragePooling,
+)
 from birdset.utils import pylogger
+from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
 log = pylogger.get_pylogger(__name__)
 
 
-class BioLingualClassifier(ViT):
+class BioLingualClassifier(BioFoundationModel):
     """
     Pretrained model for audio classification using the Biolingual model.
 
@@ -27,7 +32,7 @@ class BioLingualClassifier(ViT):
     train_classifier: If True, the model will output the embeddings and freeze the feature extractor. Default is False.
     """
 
-    EMBEDDING_SIZE = 512
+    EMBEDDING_SIZE = 768
 
     def __init__(
         self,
@@ -37,7 +42,7 @@ class BioLingualClassifier(ViT):
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
-        preprocess_in_model: bool = False,
+        preprocess_in_model: bool = True,
         classifier: nn.Module = None,
         pretrain_info: PretrainInfoConfig = None,
         device: int | str = "cuda",
@@ -65,8 +70,20 @@ class BioLingualClassifier(ViT):
             freeze_backbone=freeze_backbone,
             preprocess_in_model=preprocess_in_model,
             pretrain_info=pretrain_info,
-            pooling=pooling,
         )
+        self.pooling_type = pooling
+        if self.pooling_type == "attentive":
+            attentive_heads = 32
+            self.attentive_pooling = AttentivePooling(
+                dim=embedding_size, num_heads=attentive_heads
+            )
+        elif self.pooling_type == "attentive_old":
+            attentive_heads = 32
+            self.attentive_pooling = AttentivePooling_old(
+                embed_dim=embedding_size, num_heads=attentive_heads
+            )
+        elif self.pooling_type == "average":
+            self.average_pooling = AveragePooling()
 
     def _load_model(self) -> None:
         """
@@ -97,6 +114,30 @@ class BioLingualClassifier(ViT):
         else:
             return input_values
 
+    def pool(self, embeddings: torch.Tensor, pooling) -> torch.Tensor:
+        if pooling == "just_cls":
+            # Use only the CLS token for classification
+            # The CLS token is the first token in the sequence
+            return embeddings[:, 0, :]
+        elif pooling == "attentive":
+            embeddings = embeddings[:, 1:, :]
+            return self.attentive_pooling(embeddings)
+        elif pooling == "attentive_old":
+            embeddings = embeddings[:, 1:, :]
+            return self.attentive_pooling(embeddings)
+        elif pooling == "average":
+            return self.average_pooling(embeddings)
+        else:
+            raise ValueError(
+                f"Pooling method '{pooling}' is not supported. Choose from 'just_cls', 'attentive', 'attentive_old', or 'average'."
+            )
+
+    def get_num_layers(self) -> int:
+        """
+        Returns the number of layers in the model.
+        """
+        return len(self.model.encoder.layers)
+
     def forward(
         self, input_values: torch.Tensor, labels: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
@@ -113,11 +154,11 @@ class BioLingualClassifier(ViT):
         print(output.keys())
         # 3. Extract what you need
         embeddings = output.last_hidden_state  # shape: [1, seq_len, hidden_dim]
-        all_hidden_states = output.hidden_states  # list of tensors from each layer
-        pooled_output = output.pooler_output  # typically [CLS]-style pooled output
-        print("Last hidden state shape:", embeddings.shape)
-        print("Pooled output shape:", pooled_output.shape)
-        print("Hidden states:", all_hidden_states[0].shape)
+        # all_hidden_states = output.hidden_states  # list of tensors from each layer
+        # pooled_output = output.pooler_output  # typically [CLS]-style pooled output
+        # print("Last hidden state shape:", embeddings.shape)
+        # print("Pooled output shape:", pooled_output.shape)
+        # print("Hidden states:", all_hidden_states[0].shape)
         hidden = embeddings  # shape: [B, D, H, W]
         B, D, H, W = hidden.shape
 
