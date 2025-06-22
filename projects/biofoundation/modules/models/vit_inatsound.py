@@ -1,15 +1,17 @@
 # from biofoundation.modules.models.birdset_model import BirdSetModel
 from typing import Literal, Optional, Tuple
 from biofoundation.modules.models.vit import ViT
+import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
-import torchvision.models as models
-import torchvision.transforms as TV
+from torchvision import transforms
 import torchaudio.transforms as T
 from torchaudio.compliance import kaldi
 from birdset.configs.model_configs import PretrainInfoConfig
 import timm
+
+from biofoundation.modules.models.ViT_INS.preprocess import AudioToImageConverter
 
 # from biofoundation.modules.models.biofoundation_model import BioFoundationModel
 
@@ -48,23 +50,30 @@ class Vit_iNatSoundModel(ViT):
             classifier=classifier,
         )
 
-        self.mel_spectrogram = T.MelSpectrogram(
-            sample_rate=22050,
-            n_fft=1024,
-            win_length=512,
-            hop_length=128,
-            f_min=0,
-            f_max=11025,
-            n_mels=128,
-            power=1.0,
-            normalized=False,
-            center=False,
-            window_fn=torch.hann_window,
+        self.audio_to_image_converter = AudioToImageConverter(
+            freq_scale='mel',
+            samplerate=22050,
+            fft_length=1024,
+            window_length_samples=512,
+            hop_length_samples=128,
+            mel_bands=128,
+            mel_min_hz=0,
+            mel_max_hz=11025,
+            amin=1e-10,
+            ref_power_value=1.,
+            max_db_value=0.,
+            min_db_value=-100.,
+            target_height=None,
+            target_width=None,
+            save_distribution=None
         )
-        self.max_db_value = 0.0
-        self.min_db_value = -100.0
-        # self.model = None
-        # self.load_model()
+
+        self.transforms = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.Normalize(
+                (0.6569, 0.6569, 0.6569), (0.1786, 0.1786, 0.1786)
+            ),
+        ])
 
         # self._load_model()
 
@@ -111,30 +120,32 @@ class Vit_iNatSoundModel(ViT):
         return logits
 
     def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
-        if input_values.ndim == 2:
-            input_values = input_values.unsqueeze(1)  # (B, 1, T)
+        """
+        Process the input values with the audio to image converter and normalizer.
 
-        mel_spec = self.mel_spectrogram(input_values)  # (B, 1, n_mels, T)
-        # convert to mel to db
-        mel_spec = 20 * torch.log10(torch.clamp(mel_spec, min=1e-10))
-        mel_spec = torch.clamp(
-            mel_spec, min=self.min_db_value, max=self.max_db_value
-        )  # (B, 1, n_mels, T)
-        # normalize to [0, 255]
-        mel_spec = (mel_spec - self.min_db_value) / (
-            self.max_db_value - self.min_db_value
-        )
-        mel_spec = mel_spec * 255.0
-        mel_spec = mel_spec.round().clamp(0, 255).to(torch.float32)
+        Args:
+            input_values (torch.Tensor): The input audio tensor.
 
-        # resize
-        mel_spec = mel_spec.squeeze(1)  # (B, n_mels, T)
-        mel_spec = mel_spec.unsqueeze(1)  # (B, 1, H, W)
-        mel_spec = F.interpolate(
-            mel_spec, size=(224, 224), mode="bilinear", align_corners=False
-        )
-        mel_spec = mel_spec.repeat(1, 3, 1, 1)  # (B, 3, 224, 224)
-        return mel_spec
+        Returns:
+            torch.Tensor: The processed image tensor.
+        """
+        device = input_values.device
+        input_values = input_values.to("cpu")  # Move to CPU for processing
+        preprocessed_images = []
+        for waveform in input_values:
+            mel_spec = self.audio_to_image_converter(waveform)
+            mel_spec = mel_spec.copy()
+            mel_spec = np.stack([mel_spec]*3) # Convert to 3 channels
+            mel_spec = torch.from_numpy(mel_spec).float()
+
+            preprocessed_images.append(mel_spec)
+        # Stack the preprocessed images into a single tensor
+
+        mel_specs = torch.stack(preprocessed_images, dim=0)
+        mel_specs = mel_specs.to(device)
+        mel_specs = self.transforms(mel_specs)
+
+        return mel_specs
 
     def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
         """
