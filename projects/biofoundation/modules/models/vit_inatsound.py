@@ -30,8 +30,6 @@ class AudioToImageConverter(nn.Module):
         ref_power_value: float = 1.0,
         max_db_value: float = 0.0,
         min_db_value: float = -100.0,
-        target_height: int = None,
-        target_width: int = None,
         **kwargs
     ):
         super().__init__()
@@ -46,10 +44,11 @@ class AudioToImageConverter(nn.Module):
         self.ref_power_value = ref_power_value
         self.max_db_value = max_db_value
         self.min_db_value = min_db_value
-        self.target_height = target_height
-        self.target_width = target_width
         
-        # Create mel spectrogram transform
+        # Key changes to match old implementation:
+        # 1. Use power=2.0 then take sqrt to match magnitude calculation
+        # 2. Use center=True to match scipy's default behavior
+        # 3. Different mel scale to try to match librosa/scipy
         self.mel_transform = T.MelSpectrogram(
             sample_rate=samplerate,
             n_fft=fft_length,
@@ -58,36 +57,38 @@ class AudioToImageConverter(nn.Module):
             f_min=mel_min_hz,
             f_max=mel_max_hz,
             n_mels=mel_bands,
-            power=1.0,  # Use magnitude spectrogram (not power)
+            power=2.0,  # Use power spectrum, then take sqrt
             normalized=False,
-            center=False,  # Match preprocess.py boundary=None
-            pad_mode="constant",
+            center=True,  # Match scipy default
+            pad_mode="reflect",  # Match scipy default
             window_fn=torch.hann_window,
+            mel_scale="slaney",  # Try to match librosa default
         )
     
     def forward(self, waveforms: torch.Tensor) -> torch.Tensor:
         """
-        Convert batch of waveforms to mel spectrograms.
-        
-        Args:
-            waveforms: (B, T) tensor of audio waveforms
-            
-        Returns:
-            spectrograms: (B, H, W) tensor of mel spectrograms (uint8 equivalent range)
+        Convert batch of waveforms to mel spectrograms with improved matching.
         """
         # Ensure correct input shape
         if waveforms.ndim == 1:
-            waveforms = waveforms.unsqueeze(0)  # (T,) -> (1, T)
+            waveforms = waveforms.unsqueeze(0)
         if waveforms.ndim == 2:
-            # Assume (B, T) format, mel_transform expects (B, 1, T)
-            waveforms = waveforms.unsqueeze(1)  # (B, T) -> (B, 1, T)
+            waveforms = waveforms.unsqueeze(1)
         
-        # Compute mel spectrogram: (B, 1, n_mels, T)
+        # Compute mel spectrogram (power spectrum)
         mel_spec = self.mel_transform(waveforms)
         mel_spec = mel_spec.squeeze(1)  # (B, n_mels, T)
         
+        # Take square root to get magnitude from power
+        mel_spec = torch.sqrt(mel_spec)
+        
+        # Apply scaling factor that matches scipy STFT scaling
+        # The factor 2.0 matches the "* 2. / window.sum()" in old implementation
+        window = torch.hann_window(self.window_length_samples, device=mel_spec.device)
+        scale_factor = 2.0 / window.sum()
+        mel_spec = mel_spec * scale_factor
+        
         # Convert to dB - match preprocess.py exactly
-        # Take magnitude and apply 20*log10 transformation
         mel_spec = 20.0 * torch.log10(torch.clamp(mel_spec, min=self.amin))
         
         # Subtract reference power (dB conversion)
@@ -96,17 +97,18 @@ class AudioToImageConverter(nn.Module):
         # Clamp to dB range
         mel_spec = torch.clamp(mel_spec, min=self.min_db_value, max=self.max_db_value)
         
-        # Normalize to [0, 255] range like preprocess.py
+        # Normalize to [0, 255] range
         mel_spec = ((mel_spec - self.min_db_value) / (self.max_db_value - self.min_db_value)) * 255.0
         mel_spec = mel_spec.round().clamp(0, 255)
         
-        # Transpose from (B, freq, time) to (B, time, freq) to match preprocess.py
+        # Apply orientation to match old implementation exactly
+        # Transpose to [Time, Frequency]
         mel_spec = mel_spec.transpose(-2, -1)  # (B, T, F)
         
-        # Flip frequency axis (high to low) to match preprocess.py _orientate
+        # Flip frequency axis (high to low frequencies)
         mel_spec = torch.flip(mel_spec, dims=[-1])  # (B, T, F) with freq flipped
         
-        # Transpose back to (B, F, T) for image format
+        # Transpose back to [Frequency, Time] for image format
         mel_spec = mel_spec.transpose(-2, -1)  # (B, F, T)
         
         return mel_spec
