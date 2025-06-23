@@ -2,4 +2,4 @@
 #package global is neccessary!
 defaults:
   - beans/linearprobing/linearprobing_config.yaml 
-  - override /module/network: perch_logreg.yaml
+  - override /module/network: bird_aves.yaml  

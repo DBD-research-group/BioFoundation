@@ -20,7 +20,8 @@ logger:
     group: "biofoundation_${module.network.model_name}_attentive_BirdSet__${datamodule.dataset.dataset_name}"
     mode: online
     version: ${module.network.model_name}_attentive_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
- 
+    name: ${module.network.model_name}_attentive_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time}
+    
 module:
   optimizer:
     lr: 1.3e-3

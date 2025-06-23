@@ -1,8 +1,8 @@
 model: 
   _target_: biofoundation.modules.models.perch.PerchModel
   num_classes: null
-  tfhub_version: 4
-  train_classifier: False
+  tfhub_version: 8
+  classifier : null
   restrict_logits: True
   label_path: ${paths.root_dir}/resources/perch/label_updated.csv
   pretrain_info:
@@ -17,3 +17,5 @@ torch_compile: False
 sample_rate: 32_000
 normalize_spectrogram: False
 normalize_waveform: "instance_peak_normalization"
+embedding_size: 1280
+length: 5

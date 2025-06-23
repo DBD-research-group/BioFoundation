@@ -99,7 +99,7 @@ poetry shell
 # Experiments
 
 ## Results table 
-We have a [script](projects/biofoundation/results/latex/new_table.py) to automatically create the results table as it is quiet complex and changes often. To run the python script two .csv files named `beans.csv` and `birdset.csv` need to be in the same directory and they can be downloaded from the following [WandB Report](https://wandb.ai/deepbirddetect/BioFoundation/reports/Latex-Table-Data--VmlldzoxMjEyODQ0Ng). The [fill_tables.py](projects/biofoundation/results/latex/fill_tables.py) was used for the older tables and may not work as intended anymore.
+We have a [script](projects/biofoundation/results/latex/new_table.py) to automatically create the results table as it is quiet complex and changes often. To run the python script two .csv files named `beans.csv` and `birdset.csv` need to be in the same directory and they can be downloaded from the following [WandB Report](https://wandb.ai/deepbirddetect/BioFoundation/reports/Latex-Table-Data--VmlldzoxMjEyODQ0Ng). On the bottom of the script there are Settings including **what models** are used, how their **names are formatted**, and if **Finetuning** should be included. The [fill_tables.py](projects/biofoundation/results/latex/fill_tables.py) was used for the older tables and may not work as intended anymore.
 
 ## BEANS
 
