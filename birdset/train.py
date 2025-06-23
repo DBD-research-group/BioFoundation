@@ -113,10 +113,12 @@ def train(cfg):
         log.info(f"Starting testing")
         ckpt_path = trainer.checkpoint_callback.best_model_path
         # check if ckpt_path is empty if so check if cfg.ckpt_path is set
-
         if ckpt_path == "":
-            log.warning("No ckpt saved or found. Using current weights for testing")
-            ckpt_path = None
+            ckpt_path = cfg.get("ckpt_path")
+            if ckpt_path is None:
+                log.warning("No ckpt saved or found. Using current weights for testing")
+            else:
+                log.info(f"Using ckpt_path from config: {ckpt_path}")
         else:
             log.info(
                 f"The best checkpoint for {cfg.callbacks.model_checkpoint.monitor}"

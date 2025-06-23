@@ -1,0 +1,12 @@
+defaults:
+  - perch_logreg.yaml
+
+model:
+  classifier:
+    _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
+    in_features: 1280
+    num_classes: ${module.network.model.num_classes}
+  checkpoint_path: "https://www.kaggle.com/models/google/surfperch/TensorFlow2/1"
+  tfhub_version: 1
+
+model_name: surfperch
