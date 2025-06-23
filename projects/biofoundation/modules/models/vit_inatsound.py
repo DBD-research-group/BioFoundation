@@ -16,7 +16,7 @@ import timm
 
 class AudioToImageConverter(nn.Module):
     """GPU-accelerated audio to mel-spectrogram converter using PyTorch."""
-    
+
     def __init__(
         self,
         samplerate: int = 22050,
@@ -44,7 +44,7 @@ class AudioToImageConverter(nn.Module):
         self.ref_power_value = ref_power_value
         self.max_db_value = max_db_value
         self.min_db_value = min_db_value
-        
+
         # Key changes to match old implementation:
         # 1. Use power=2.0 then take sqrt to match magnitude calculation
         # 2. Use center=True to match scipy's default behavior
@@ -64,7 +64,7 @@ class AudioToImageConverter(nn.Module):
             window_fn=torch.hann_window,
             mel_scale="slaney",  # Try to match librosa default
         )
-    
+
     def forward(self, waveforms: torch.Tensor) -> torch.Tensor:
         """
         Convert batch of waveforms to mel spectrograms with improved matching.
@@ -74,43 +74,47 @@ class AudioToImageConverter(nn.Module):
             waveforms = waveforms.unsqueeze(0)
         if waveforms.ndim == 2:
             waveforms = waveforms.unsqueeze(1)
-        
+
         # Compute mel spectrogram (power spectrum)
         mel_spec = self.mel_transform(waveforms)
         mel_spec = mel_spec.squeeze(1)  # (B, n_mels, T)
-        
+
         # Take square root to get magnitude from power
         mel_spec = torch.sqrt(mel_spec)
-        
+
         # Apply scaling factor that matches scipy STFT scaling
         # The factor 2.0 matches the "* 2. / window.sum()" in old implementation
         window = torch.hann_window(self.window_length_samples, device=mel_spec.device)
         scale_factor = 2.0 / window.sum()
         mel_spec = mel_spec * scale_factor
-        
+
         # Convert to dB - match preprocess.py exactly
         mel_spec = 20.0 * torch.log10(torch.clamp(mel_spec, min=self.amin))
-        
+
         # Subtract reference power (dB conversion)
-        mel_spec = mel_spec - 20.0 * torch.log10(torch.tensor(self.ref_power_value, device=mel_spec.device))
-        
+        mel_spec = mel_spec - 20.0 * torch.log10(
+            torch.tensor(self.ref_power_value, device=mel_spec.device)
+        )
+
         # Clamp to dB range
         mel_spec = torch.clamp(mel_spec, min=self.min_db_value, max=self.max_db_value)
-        
+
         # Normalize to [0, 255] range
-        mel_spec = ((mel_spec - self.min_db_value) / (self.max_db_value - self.min_db_value)) * 255.0
+        mel_spec = (
+            (mel_spec - self.min_db_value) / (self.max_db_value - self.min_db_value)
+        ) * 255.0
         mel_spec = mel_spec.round().clamp(0, 255)
-        
+
         # Apply orientation to match old implementation exactly
         # Transpose to [Time, Frequency]
         mel_spec = mel_spec.transpose(-2, -1)  # (B, T, F)
-        
+
         # Flip frequency axis (high to low frequencies)
         mel_spec = torch.flip(mel_spec, dims=[-1])  # (B, T, F) with freq flipped
-        
+
         # Transpose back to [Frequency, Time] for image format
         mel_spec = mel_spec.transpose(-2, -1)  # (B, F, T)
-        
+
         return mel_spec
 
 
@@ -157,9 +161,9 @@ class Vit_iNatSoundModel(ViT):
             mel_min_hz=0,
             mel_max_hz=11025,
             amin=1e-10,
-            ref_power_value=1.,
-            max_db_value=0.,
-            min_db_value=-100.,
+            ref_power_value=1.0,
+            max_db_value=0.0,
+            min_db_value=-100.0,
             target_height=None,
             target_width=None,
         )
@@ -216,20 +220,26 @@ class Vit_iNatSoundModel(ViT):
         """
         # Process entire batch at once on GPU
         mel_specs = self.audio_to_image_converter(input_values)  # (B, F, T)
-        
+
         # Convert to 3-channel RGB format
         mel_specs = mel_specs.unsqueeze(1)  # (B, 1, F, T)
         mel_specs = mel_specs.repeat(1, 3, 1, 1)  # (B, 3, F, T)
-        
+
         # Resize to 224x224 and apply normalization
-        mel_specs = F.interpolate(mel_specs, size=(224, 224), mode='bilinear', align_corners=False)
-        
+        mel_specs = F.interpolate(
+            mel_specs, size=(224, 224), mode="bilinear", align_corners=False
+        )
+
         # Apply ImageNet normalization
         mel_specs = mel_specs / 255.0  # Convert from [0, 255] to [0, 1]
-        mean = torch.tensor([0.6569, 0.6569, 0.6569], device=mel_specs.device).view(1, 3, 1, 1)
-        std = torch.tensor([0.1786, 0.1786, 0.1786], device=mel_specs.device).view(1, 3, 1, 1)
+        mean = torch.tensor([0.6569, 0.6569, 0.6569], device=mel_specs.device).view(
+            1, 3, 1, 1
+        )
+        std = torch.tensor([0.1786, 0.1786, 0.1786], device=mel_specs.device).view(
+            1, 3, 1, 1
+        )
         mel_specs = (mel_specs - mean) / std
-        
+
         return mel_specs
 
     def get_embeddings(self, input_values: torch.Tensor) -> torch.Tensor:
