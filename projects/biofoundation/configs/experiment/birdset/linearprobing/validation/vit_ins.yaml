@@ -3,3 +3,8 @@
 defaults:
   - birdset/linearprobing/validation/validation_config.yaml 
   - override /module/network: vit_ins.yaml 
+
+datamodule:
+  transforms:
+    preprocessing:
+      normalize_waveform: "instance_min_max"
