@@ -41,6 +41,7 @@ class AvesClassifier(ViT):
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
+            classifier=classifier,
             local_checkpoint=local_checkpoint,
             load_classifier_checkpoint=load_classifier_checkpoint,
             freeze_backbone=freeze_backbone,
@@ -48,10 +49,6 @@ class AvesClassifier(ViT):
             pretrain_info=pretrain_info,
             pooling=pooling,
         )
-        if classifier is None:
-            self.classifier = nn.Linear(embedding_size, num_classes)
-        else:
-            self.classifier = classifier
 
     def _load_model(self) -> None:
         """
