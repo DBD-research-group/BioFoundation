@@ -150,21 +150,11 @@ class BioLingualClassifier(BioFoundationModel):
         inputs["input_features"] = inputs["input_features"].to(self.device)
         output = self.model.audio_model(
             **inputs, output_hidden_states=True, return_dict=True
-        )
-        print(output.keys())
-        # 3. Extract what you need
-        embeddings = output.last_hidden_state  # shape: [1, seq_len, hidden_dim]
-        # all_hidden_states = output.hidden_states  # list of tensors from each layer
-        # pooled_output = output.pooler_output  # typically [CLS]-style pooled output
-        # print("Last hidden state shape:", embeddings.shape)
-        # print("Pooled output shape:", pooled_output.shape)
-        # print("Hidden states:", all_hidden_states[0].shape)
-        hidden = embeddings  # shape: [B, D, H, W]
-        B, D, H, W = hidden.shape
+        )  # self.model.extract_audio_features() doesnt retrn the hidden states for some reason so we go a layer down
+        embeddings = output.last_hidden_state
+        B, D, H, W = embeddings.shape
 
         # Flatten the 2D patch grid into a sequence
-        hidden = hidden.permute(0, 2, 3, 1).reshape(B, H * W, D)
+        embeddings = embeddings.permute(0, 2, 3, 1).reshape(B, H * W, D)
 
-        # print(audio_embed.shape)
-        # audio_embed doesnt return hidden states for some reason
-        return self.pool(hidden, self.pooling_type)
+        return self.pool(embeddings, self.pooling_type)
