@@ -55,8 +55,6 @@ datamodule:
     preprocessing:
         normalize_waveform: null
         normalize_spectrogram: null
-    nocall_sampler:
-      length: ${module.network.length}
  
  
   loaders:

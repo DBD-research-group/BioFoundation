@@ -1,9 +1,0 @@
-# @package _global_
-#package global is neccessary!
-defaults:
-  - birdset/linearprobing/pooling/pooling_config.yaml 
-  - override /module/network: vit_inatsound.yaml 
-
-#datamodule:
-  #dataset
-    #use_test_as_valid: True
