@@ -164,8 +164,6 @@ class Vit_iNatSoundModel(ViT):
             target_width=None,
         )
 
-        # self._load_model()
-
     def _load_model(self) -> nn.Module:
         model = timm.create_model(
             "vit_base_patch16_224",
@@ -195,9 +193,6 @@ class Vit_iNatSoundModel(ViT):
         Returns:
             torch.Tensor: The output of the classifier.
         """
-        # input_values = self.duplicate_channels(input_values)
-        # spectograms = self.preprocess(input_values)
-        # return self.model(spectograms)
         if self.preprocess_in_model:
             input_values = self.preprocess(input_values)
         if self.classifier is not None:
