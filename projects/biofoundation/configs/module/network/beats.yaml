@@ -1,6 +1,6 @@
 model: 
   _target_: biofoundation.modules.models.beats.BEATsModel
-  checkpoint_path: '/workspace/models/beats/beats_naturelm.pt'
+  checkpoint_path: '/workspace/models/beats/BEATs_iter3_plus_AS2M.pt'
   num_classes: null
 
 model_name: BEATs
