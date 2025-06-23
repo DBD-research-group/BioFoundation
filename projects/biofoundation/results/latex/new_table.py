@@ -91,12 +91,15 @@ def beans_table(path, models):
                 (df["Model"] == model)
                 & (df["Dataset"] == dataset)
                 & (df["Tags"].str.contains("linearprobing"))
+                & (df["Pooling"] != "attentive")
+                & (df["Pooling"] != "average")
             ]
             ft_rows = df[
                 (df["Model"] == model)
                 & (df["Dataset"] == dataset)
                 & (df["Tags"].str.contains("finetune|finetuning"))
                 & (df["Pooling"] != "attentive")
+                & (df["Pooling"] != "average")
             ]
 
             ap_rows = df[
@@ -350,7 +353,7 @@ MODELS = [
     "convnext_bs",
     "eat_ssl",
     "perch",
-    "proto_clr",
+    "ProtoCLR",
     "surfperch",
     "vit_ins",
 ]  # Extract these names from the CSV file
