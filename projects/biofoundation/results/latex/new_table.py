@@ -355,14 +355,14 @@ MODELS = [
     "perch",
     "ProtoCLR",
     "surfperch",
-    "vit_ins",
+    "vit_inatsound",
 ]  # Extract these names from the CSV file
 MODEL_NAMES = [
     "Audio-MAE",
     "AVES",
     "BEATs",
     "BEATs-NLM",
-    "Bioli-ngual",
+    "Biolin-gual",
     "Bird-AVES",
     "Bird-MAE",
     "Conv-Next$_{BS}$",
