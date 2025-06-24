@@ -511,9 +511,20 @@ class NoCallMixer:
 
                 audio = torch.tensor(audio)
 
-                if audio.numel() < input_values[idx].numel():
-                    padding = input_values[idx].numel() - audio.numel()
+                # Get the target size from the original tensor
+                target_size = input_values[idx].shape[-1]
+                
+                if audio.numel() < target_size:
+                    # Pad if audio is shorter
+                    padding = target_size - audio.numel()
                     audio = torch.nn.functional.pad(audio, (0, padding))
+                elif audio.numel() > target_size:
+                    # Truncate if audio is longer
+                    audio = audio[:target_size]
+                
+                # Ensure audio has the same shape as input_values[idx]
+                if input_values[idx].ndim > 1:
+                    audio = audio.unsqueeze(0)  # Add channel dimension if needed
 
                 input_values[idx] = audio
                 labels[idx] = torch.zeros(c)
