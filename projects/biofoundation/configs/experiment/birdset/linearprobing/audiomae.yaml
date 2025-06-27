@@ -3,3 +3,11 @@
 defaults:
   - birdset/linearprobing/linearprobing_config.yaml 
   - override /module/network: audiomae.yaml 
+
+callbacks:
+  log_spectrograms:
+    _target_: biofoundation.callbacks.log_spectrograms.SpectrogramSaver
+    output_dir: ${paths.root_dir}/projects/biofoundation/results/log_spectrograms
+    every_n_batches: 1
+    amount: 1
+    dataset: ${datamodule.dataset.dataset_name}
