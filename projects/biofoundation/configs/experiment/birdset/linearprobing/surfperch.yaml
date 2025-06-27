@@ -3,3 +3,8 @@
 defaults:
   - birdset/linearprobing/linearprobing_config.yaml 
   - override /module/network: surfperch.yaml  
+
+datamodule:
+  transforms:
+    preprocessing:
+      normalize_waveform: "instance_peak_normalization"

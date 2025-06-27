@@ -16,6 +16,9 @@ module:
       classifier: null
 
 datamodule:
+  transforms:
+    preprocessing:
+      normalize_waveform: "instance_peak_normalization"
   dataset:
     val_split: null
     class_weights_loss: null
