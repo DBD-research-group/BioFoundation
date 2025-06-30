@@ -56,9 +56,6 @@ datamodule:
     eventlimit: 5
   transforms:
     max_length: ${module.network.length}
-    preprocessing:
-        normalize_waveform: null
-        normalize_spectrogram: null
     nocall_sampler:
       length: ${module.network.length}
 
