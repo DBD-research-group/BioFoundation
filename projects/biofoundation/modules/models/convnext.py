@@ -268,7 +268,7 @@ class ConvNextEmbedding(nn.Module):
             )
             self.model = ConvNextModel(config)
 
-    def preprocess(
+    def _preprocess(
         self, input_values: torch.Tensor, input_tdim=500, sample_rate=32000
     ) -> torch.Tensor:
         """
@@ -304,7 +304,7 @@ class ConvNextEmbedding(nn.Module):
         return melspecs
 
     def get_embeddings(self, input_tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        input_tensor = self.preprocess(input_tensor)
+        input_tensor = self._preprocess(input_tensor)
         input_tensor = input_tensor.transpose(2, 3)
         output = self.model(input_tensor, output_hidden_states=True, return_dict=True)
         return output.pooler_output, None
