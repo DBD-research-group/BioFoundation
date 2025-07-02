@@ -35,8 +35,7 @@ class ConvNextModule(BioFoundationModel):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = False,
         classifier: nn.Module | None = None,
-        restrict_logits: bool = True,
-        label_path: Optional[str] = None,
+        restrict_logits: bool = False,
         num_channels: int = 1,
         checkpoint: str = "DBD-research-group/ConvNeXT-Base-BirdSet-XCL",
         local_checkpoint: Optional[str] = None,
@@ -68,7 +67,8 @@ class ConvNextModule(BioFoundationModel):
         self.cache_dir = cache_dir
         self.num_channels = num_channels
         self.restrict_logits = restrict_logits
-        self.label_path = label_path
+        self.class_mask = None  # Initialize as None
+
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
@@ -97,39 +97,6 @@ class ConvNextModule(BioFoundationModel):
     def _load_model(self) -> ConvNextModel:
         adjusted_state_dict = None
 
-        if self.restrict_logits:
-            # Load the class list from the CSV file
-            pretrain_classlabels = pd.read_csv(self.label_path)
-            # Extract the 'ebird2021' column as a list
-            pretrain_classlabels = pretrain_classlabels["ebird2021"].tolist()
-
-            # Load dataset information
-            dataset_info = datasets.load_dataset_builder(
-                self.hf_path, self.hf_name
-            ).info
-            dataset_classlabels = dataset_info.features["ebird_code"].names
-
-            # Create the class mask
-            self.class_mask = [
-                pretrain_classlabels.index(label)
-                for label in dataset_classlabels
-                if label in pretrain_classlabels
-            ]
-            self.class_indices = [
-                i
-                for i, label in enumerate(dataset_classlabels)
-                if label in pretrain_classlabels
-            ]
-
-            # Log missing labels
-            missing_labels = [
-                label
-                for label in dataset_classlabels
-                if label not in pretrain_classlabels
-            ]
-            if missing_labels:
-                logging.warning(f"Missing labels in pretrained model: {missing_labels}")
-
         if self.checkpoint:
             if self.local_checkpoint:
                 state_dict = torch.load(self.local_checkpoint)["state_dict"]
@@ -145,15 +112,55 @@ class ConvNextModule(BioFoundationModel):
 
                     # Assign the adjusted key
                     adjusted_state_dict[new_key] = value
+            if self.restrict_logits:
+                self.pretrain_classes = len(
+                    datasets.load_dataset_builder(self.hf_path, self.pretrain_name)
+                    .info.features["ebird_code"]
+                    .names
+                )
+            else:
+                self.pretrain_classes = self.num_classes
 
-            return ConvNextForImageClassification.from_pretrained(
+            model = ConvNextForImageClassification.from_pretrained(
                 self.checkpoint,
-                num_labels=self.num_classes,
+                num_labels=self.pretrain_classes,
                 num_channels=self.num_channels,
                 cache_dir=self.cache_dir,
                 state_dict=adjusted_state_dict,
                 ignore_mismatched_sizes=True,
             )
+            if self.restrict_logits:
+                # Load the class list from the model
+                pretrain_classlabels = model.config.id2label
+                # Convert id2label dict to list of labels for easier processing
+                pretrain_labels_list = list(pretrain_classlabels.values())
+
+                # Load dataset information
+                if (
+                    hasattr(self, "hf_path")
+                    and hasattr(self, "hf_name")
+                    and self.hf_path
+                    and self.hf_name
+                ):
+                    dataset_info = datasets.load_dataset_builder(
+                        self.hf_path, self.hf_name
+                    ).info
+                    dataset_classlabels = dataset_info.features["ebird_code"].names
+                else:
+                    # Fallback: use pretrained model labels if dataset info not available
+                    dataset_classlabels = pretrain_labels_list
+                    logging.warning(
+                        "Dataset info not available, using pretrained model labels"
+                    )
+
+                # Create the class mask (indices in pretrained model for matching labels)
+                self.class_mask = [
+                    idx
+                    for idx, label in pretrain_classlabels.items()
+                    if label in dataset_classlabels
+                ]
+            return model
+
         else:
             config = AutoConfig.from_pretrained(
                 "facebook/convnext-base-224-22k",
@@ -197,31 +204,9 @@ class ConvNextModule(BioFoundationModel):
         Returns:
             torch.Tensor: The output of the ConvNext model.
         """
-        if self.class_mask:
-            # Initialize full_logits to a large negative value for penalizing non-present classes
-            output = self.model(
-                input_values, output_hidden_states=True, return_dict=True
-            )
-            print(output.keys())
-            logits = output.logits
-            full_logits = torch.full(
-                (logits.shape[0], self.num_classes),
-                -10.0,
-                device=logits.device,
-                dtype=logits.dtype,
-            )
-            assert torch.all(self.class_mask >= 0)
-            assert torch.all(
-                self.class_mask < logits.shape[1]
-            ), f"self.class_mask has out-of-bounds index >= {logits.shape[1]}"
-            assert torch.all(self.class_indices >= 0)
-            assert torch.all(self.class_indices < self.num_classes)
-            # Extract valid logits using indices from class_mask and directly place them
-            full_logits[:, self.class_indices] = logits[:, self.class_mask]
-            logits = full_logits
-
         if self.preprocess_in_model:
             input_values = self._preprocess(input_values)
+
         if self.classifier is not None:
             embeddings = self.get_embeddings(input_values)
             logits = self.classifier(embeddings)
@@ -242,130 +227,3 @@ class ConvNextModule(BioFoundationModel):
     @torch.inference_mode()
     def get_representations(self, dataloader, device):
         pass
-
-
-class ConvNextEmbedding(nn.Module):
-    """
-    ConvNext model for audio classification.
-    """
-
-    MEAN = -4.2677393
-    STD = 4.5689974
-
-    def __init__(
-        self,
-        num_channels: int = 1,
-        num_classes: Optional[int] = None,
-        checkpoint: Optional[str] = None,
-        local_checkpoint: Optional[str] = None,
-        cache_dir: Optional[str] = None,
-        pretrain_info: PretrainInfoConfig = None,
-    ):
-        """
-        Note: Either num_classes or pretrain_info must be given
-        Args:
-            num_channels: Number of input channels.
-            checkpoint: huggingface checkpoint path of any model of correct type
-            local_checkpoint: local path to checkpoint file
-            cache_dir: specified cache dir to save model files at
-            pretrain_info: hf_path and hf_name of info will be used to infer if num_classes is None
-        """
-        super().__init__()
-
-        if pretrain_info:
-            self.hf_path = pretrain_info.hf_path
-            self.hf_name = (
-                pretrain_info.hf_name
-                if not pretrain_info.hf_pretrain_name
-                else pretrain_info.hf_pretrain_name
-            )
-        else:
-            self.hf_path = None
-            self.hf_name = None
-
-        self.num_channels = num_channels
-        self.checkpoint = checkpoint
-        self.local_checkpoint = local_checkpoint
-        self.cache_dir = cache_dir
-
-        self.model = None
-
-        self._initialize_model()
-
-    def _initialize_model(self):
-        """Initializes the ConvNext model based on specified attributes."""
-
-        adjusted_state_dict = None
-
-        if self.checkpoint:
-            if self.local_checkpoint:
-                state_dict = torch.load(self.local_checkpoint)["state_dict"]
-
-                # Update this part to handle the necessary key replacements
-                adjusted_state_dict = {}
-                for key, value in state_dict.items():
-                    # Handle 'model.model.' prefix
-                    new_key = key.replace("model.model.", "")
-
-                    # Handle 'model._orig_mod.model.' prefix
-                    new_key = new_key.replace("model._orig_mod.model.", "")
-
-                    # Assign the adjusted key
-                    adjusted_state_dict[new_key] = value
-
-            self.model = ConvNextModel.from_pretrained(
-                self.checkpoint,
-                num_channels=self.num_channels,
-                cache_dir=self.cache_dir,
-                state_dict=adjusted_state_dict,
-                ignore_mismatched_sizes=True,
-            )
-
-        else:
-            print("Using pretrained convnext")
-            config = AutoConfig.from_pretrained(
-                "facebook/convnext-base-224-22k",
-                num_channels=self.num_channels,
-            )
-            self.model = ConvNextModel(config)
-
-    def preprocess(
-        self, input_values: torch.Tensor, input_tdim=500, sample_rate=32000
-    ) -> torch.Tensor:
-        """
-        Preprocesses the input values by applying mel-filterbank transformation.
-        Args:
-            input_values (torch.Tensor): Input tensor of shape (batch_size, num_samples).
-            input_tdim (int): The number of frames to keep. Defaults to 500.
-            sample_rate (int): The sampling rate of the input tensor. Defaults to 16000.
-        Returns:
-            torch.Tensor: Preprocessed tensor of shape (batch_size, 1, num_mel_bins, num_frames).
-        """
-        device = input_values.device
-        melspecs = []
-        for waveform in input_values:
-            melspec = kaldi.fbank(
-                waveform,
-                htk_compat=True,
-                window_type="hanning",
-                num_mel_bins=128,
-                use_energy=False,
-                sample_frequency=sample_rate,
-                frame_shift=10,
-            )  # shape (n_frames, 128)
-            # print(melspec.shape)
-            if melspec.shape[0] < input_tdim:
-                melspec = F.pad(melspec, (0, 0, 0, input_tdim - melspec.shape[0]))
-            else:
-                melspec = melspec[:input_tdim]
-            melspecs.append(melspec)
-        melspecs = torch.stack(melspecs).to(device)
-        melspecs = melspecs.unsqueeze(1)  # shape (batch_size, 1, 128, 1024)
-        melspecs = (melspecs - self.MEAN) / (self.STD * 2)
-        return melspecs
-
-    def get_embeddings(self, input_tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        input_tensor = self.preprocess(input_tensor)
-        input_tensor = input_tensor.transpose(2, 3)
-        output = self.model(input_tensor, output_hidden_states=True, return_dict=True)
-        return output.pooler_output, None
