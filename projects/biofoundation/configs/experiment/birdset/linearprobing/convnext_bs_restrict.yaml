@@ -19,6 +19,8 @@ module:
         hf_name: ${datamodule.dataset.hf_name}
         hf_pretrain_name: XCL
         valid_test_only: False
+      restrict_logits: True
+      label_path: ${paths.root_dir}/resources/perch/label_updated.csv
 
 datamodule:
   dataset:

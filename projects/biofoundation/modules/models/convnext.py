@@ -1,5 +1,7 @@
 from typing import Dict, Literal, Optional
-
+import datasets
+import logging
+import pandas as pd
 from biofoundation.modules.models.Pooling import AttentivePooling, AveragePooling
 import torch
 from torch import nn
@@ -33,6 +35,8 @@ class ConvNextModule(BioFoundationModel):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = False,
         classifier: nn.Module | None = None,
+        restrict_logits: bool = True,
+        label_path: Optional[str] = None,
         num_channels: int = 1,
         checkpoint: str = "DBD-research-group/ConvNeXT-Base-BirdSet-XCL",
         local_checkpoint: Optional[str] = None,
@@ -63,6 +67,8 @@ class ConvNextModule(BioFoundationModel):
         self.checkpoint = checkpoint
         self.cache_dir = cache_dir
         self.num_channels = num_channels
+        self.restrict_logits = restrict_logits
+        self.label_path = label_path
         super().__init__(
             num_classes=num_classes,
             embedding_size=embedding_size,
@@ -74,7 +80,6 @@ class ConvNextModule(BioFoundationModel):
             pretrain_info=pretrain_info,
             pooling=pooling,
         )
-
         self.config = self.model.config
 
         if self.pooling == "default":
@@ -91,6 +96,39 @@ class ConvNextModule(BioFoundationModel):
 
     def _load_model(self) -> ConvNextModel:
         adjusted_state_dict = None
+
+        if self.restrict_logits:
+            # Load the class list from the CSV file
+            pretrain_classlabels = pd.read_csv(self.label_path)
+            # Extract the 'ebird2021' column as a list
+            pretrain_classlabels = pretrain_classlabels["ebird2021"].tolist()
+
+            # Load dataset information
+            dataset_info = datasets.load_dataset_builder(
+                self.hf_path, self.hf_name
+            ).info
+            dataset_classlabels = dataset_info.features["ebird_code"].names
+
+            # Create the class mask
+            self.class_mask = [
+                pretrain_classlabels.index(label)
+                for label in dataset_classlabels
+                if label in pretrain_classlabels
+            ]
+            self.class_indices = [
+                i
+                for i, label in enumerate(dataset_classlabels)
+                if label in pretrain_classlabels
+            ]
+
+            # Log missing labels
+            missing_labels = [
+                label
+                for label in dataset_classlabels
+                if label not in pretrain_classlabels
+            ]
+            if missing_labels:
+                logging.warning(f"Missing labels in pretrained model: {missing_labels}")
 
         if self.checkpoint:
             if self.local_checkpoint:
@@ -159,6 +197,29 @@ class ConvNextModule(BioFoundationModel):
         Returns:
             torch.Tensor: The output of the ConvNext model.
         """
+        if self.class_mask:
+            # Initialize full_logits to a large negative value for penalizing non-present classes
+            output = self.model(
+                input_values, output_hidden_states=True, return_dict=True
+            )
+            print(output.keys())
+            logits = output.logits
+            full_logits = torch.full(
+                (logits.shape[0], self.num_classes),
+                -10.0,
+                device=logits.device,
+                dtype=logits.dtype,
+            )
+            assert torch.all(self.class_mask >= 0)
+            assert torch.all(
+                self.class_mask < logits.shape[1]
+            ), f"self.class_mask has out-of-bounds index >= {logits.shape[1]}"
+            assert torch.all(self.class_indices >= 0)
+            assert torch.all(self.class_indices < self.num_classes)
+            # Extract valid logits using indices from class_mask and directly place them
+            full_logits[:, self.class_indices] = logits[:, self.class_mask]
+            logits = full_logits
+
         if self.preprocess_in_model:
             input_values = self._preprocess(input_values)
         if self.classifier is not None:
