@@ -26,6 +26,12 @@ def format_values(values):
     return np.array(formatted_columns).T.tolist()
 
 
+def format_values_no_bold(values):  # This just handles values for one model
+    rounded = np.round(values, 1)
+    formatted = [f"{val:.1f}" if val > 0 else "-" for val in rounded]
+    return formatted
+
+
 def format_name(name):
     if "-" in name:
         parts = name.split("-")
@@ -51,6 +57,12 @@ def format_hm(values, color):
     return formatted
 
 
+def format_hm_no_bold(values, color):  # This just handles values for one model
+    rounded = np.round(values, 1)
+    formatted = [f"\\heat{color}{{{val:.1f}}}" if val > 0 else "-" for val in rounded]
+    return formatted
+
+
 # === BEANS === (Adjusted for one table so it returns the needed lists)
 def beans_table(path, models):
     df = pd.read_csv(path, sep=",")
@@ -63,6 +75,7 @@ def beans_table(path, models):
             "tags": "Tags",
             "module.network.model.pooling": "Pooling",
             "test/MulticlassAccuracy": "Top1",
+            "module.network.model.restrict_logits": "Restrict",
         }
     )
 
@@ -93,6 +106,7 @@ def beans_table(path, models):
                 & (df["Tags"].str.contains("linearprobing"))
                 & (df["Pooling"] != "attentive")
                 & (df["Pooling"] != "average")
+                & (df["Restrict"] != "true")
             ]
             ft_rows = df[
                 (df["Model"] == model)
@@ -100,12 +114,14 @@ def beans_table(path, models):
                 & (df["Tags"].str.contains("finetune|finetuning"))
                 & (df["Pooling"] != "attentive")
                 & (df["Pooling"] != "average")
+                & (df["Restrict"] != "true")
             ]
 
             ap_rows = df[
                 (df["Model"] == model)
                 & (df["Dataset"] == dataset)
                 & (df["Pooling"] == "attentive")
+                & (df["Restrict"] != "true")
             ]
 
             top1_lp.append(
@@ -162,7 +178,7 @@ def beans_table(path, models):
 
 
 # === BirdSet ===
-def birdset_table(models, model_names, path, path_beans, finetuning):
+def birdset_table(models, model_names, path, path_beans, finetuning, restricted):
     df = pd.read_csv(path, sep=",")
 
     # Rename for convenience
@@ -173,6 +189,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning):
             "tags": "Tags",
             "module.network.model.pooling": "Pooling",
             "test/cmAP5": "Cmap",
+            "module.network.model.restrict_logits": "Restrict",
         }
     )
 
@@ -224,7 +241,6 @@ def birdset_table(models, model_names, path, path_beans, finetuning):
     # Collect data for all models
     for model in models:
         cmap_lp, cmap_ft, cmap_ap = [], [], []
-
         for dataset in datasets:
             lp_rows = df[
                 (df["Model"] == model)
@@ -232,6 +248,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning):
                 & (df["Tags"].str.contains("linearprobing"))
                 & (df["Pooling"] != "attentive")
                 & (df["Pooling"] != "average")
+                & (df["Restrict"] != True)
             ]
             ft_rows = df[
                 (df["Model"] == model)
@@ -239,12 +256,14 @@ def birdset_table(models, model_names, path, path_beans, finetuning):
                 & (df["Tags"].str.contains("finetune|finetuning"))
                 & (df["Pooling"] != "attentive")
                 & (df["Pooling"] != "average")
+                & (df["Restrict"] != True)
             ]
 
             ap_rows = df[
                 (df["Model"] == model)
                 & (df["Dataset"] == dataset)
                 & (df["Pooling"] == "attentive")
+                & (df["Restrict"] != True)
             ]
 
             cmap_lp.append(
@@ -313,14 +332,50 @@ def birdset_table(models, model_names, path, path_beans, finetuning):
                 + " & ".join(all_cmap_lp[i])
                 + f" & {all_avg_cmap_lp[i]} \\\\ \n"
             )
+            if restricted and (model == "surfperch" or model == "perch"):
+                # Calculate restricted results in isolated form for easy removal
+                cmap_res = []
+                for dataset in datasets:
+                    res_rows = df[
+                        (df["Model"] == model)
+                        & (df["Dataset"] == dataset)
+                        & (df["Tags"].str.contains("linearprobing"))
+                        & (df["Restrict"] == True)
+                    ]
+                    cmap_res.append(
+                        res_rows["Cmap"].max() if not res_rows.empty else 0
+                    )  # Max value for Res Cmap
+                avg_cmap_res = (
+                    round(
+                        np.mean(
+                            [x for i, x in enumerate(cmap_res) if x > 0 and i != 0]
+                        ),
+                        1,
+                    )
+                    if any(x > 0 and i != 0 for i, x in enumerate(cmap_res))
+                    else 0
+                )
+                # Do the formating seperately
+                cmap_res = format_values_no_bold(cmap_res)
+                avg_cmap_res = format_hm_no_bold([avg_cmap_res], "blue")[0]
 
-            f.write(
-                f" & {{Attentive}} & "
-                + " & ".join(all_top1_ap_beans[i])
-                + f" & {all_avg_top1_ap_beans[i]} &"
-                + " & ".join(all_cmap_ap[i])
-                + f" & {all_avg_cmap_ap[i]} \\\\ \n"
-            )
+                # TODO: Add for beans if it works with CBI
+                f.write(
+                    f" & {{Restricted}} & "
+                    + " & ".join(all_top1_ap_beans[i])
+                    + f" & {all_avg_top1_ap_beans[i]} &"
+                    + " & ".join(cmap_res)
+                    + f" & {avg_cmap_res} \\\\ \n"
+                )
+            else:
+                f.write(
+                    f" & {{Attentive}} & "
+                    + " & ".join(all_top1_ap_beans[i])
+                    + f" & {all_avg_top1_ap_beans[i]} &"
+                    + " & ".join(all_cmap_ap[i])
+                    + f" & {all_avg_cmap_ap[i]} \\\\ \n"
+                )
+
             if finetuning:
                 f.write(
                     f" & {{Finetuned}} & "
@@ -375,6 +430,7 @@ MODEL_NAMES = [
 CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
 FINETUNING = False  # Set to True if you want to include finetuning results
+RESTRICTED = True  # Set to True to use Perch, Surfperch restricted models
 
 # Print summary of settings
 print("Summary of settings:")
@@ -383,4 +439,4 @@ for model, model_name in zip(MODELS, MODEL_NAMES):
     print(f"  {model} -> {model_name}")
 print(f"Finetuning: {FINETUNING}")
 
-birdset_table(MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING)
+birdset_table(MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, RESTRICTED)
