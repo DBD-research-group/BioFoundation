@@ -75,11 +75,12 @@ def beans_table(path, models):
             "tags": "Tags",
             "module.network.model.pooling": "Pooling",
             "test/MulticlassAccuracy": "Top1",
+            "module.network.model.restrict_logits": "Restrict",
         }
     )
 
     # if the "restrict" is present in the tags, set Restrict to True
-    df["Restrict"] = df["Tags"].str.contains("restrict", case=False)
+    # df["Restrict"] = df["Tags"].str.contains("restrict", case=False)
 
     # Convert scores to percentage
     df["Top1"] *= 100
@@ -191,11 +192,12 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
             "tags": "Tags",
             "module.network.model.pooling": "Pooling",
             "test/cmAP5": "Cmap",
+            "module.network.model.restrict_logits": "Restrict",
         }
     )
 
     # if the "restrict" is present in the tags, set Restrict to True
-    df["Restrict"] = df["Tags"].str.contains("restrict", case=False)
+    # df["Restrict"] = df["Tags"].str.contains("restrict", case=False)
 
     # Convert scores to percentage
     df["Cmap"] *= 100
