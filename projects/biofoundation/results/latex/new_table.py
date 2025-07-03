@@ -75,9 +75,11 @@ def beans_table(path, models):
             "tags": "Tags",
             "module.network.model.pooling": "Pooling",
             "test/MulticlassAccuracy": "Top1",
-            "module.network.model.restrict_logits": "Restrict",
         }
     )
+
+    # if the "restrict" is present in the tags, set Restrict to True
+    df["Restrict"] = df["Tags"].str.contains("restrict", case=False)
 
     # Convert scores to percentage
     df["Top1"] *= 100
@@ -189,9 +191,11 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
             "tags": "Tags",
             "module.network.model.pooling": "Pooling",
             "test/cmAP5": "Cmap",
-            "module.network.model.restrict_logits": "Restrict",
         }
     )
+
+    # if the "restrict" is present in the tags, set Restrict to True
+    df["Restrict"] = df["Tags"].str.contains("restrict", case=False)
 
     # Convert scores to percentage
     df["Cmap"] *= 100
@@ -332,14 +336,15 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
                 + " & ".join(all_cmap_lp[i])
                 + f" & {all_avg_cmap_lp[i]} \\\\ \n"
             )
-            if restricted and (model == "surfperch" or model == "perch"):
+            if restricted and (
+                model == "surfperch" or model == "perch" or model == "convnext_bs"
+            ):
                 # Calculate restricted results in isolated form for easy removal
                 cmap_res = []
                 for dataset in datasets:
                     res_rows = df[
                         (df["Model"] == model)
                         & (df["Dataset"] == dataset)
-                        & (df["Tags"].str.contains("linearprobing"))
                         & (df["Restrict"] == True)
                     ]
                     cmap_res.append(
@@ -430,7 +435,7 @@ MODEL_NAMES = [
 CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
 FINETUNING = False  # Set to True if you want to include finetuning results
-RESTRICTED = True  # Set to True to use Perch, Surfperch restricted models
+RESTRICTED = True  # Set to True to use Perch, Surfperch, Convnext_Bs restricted models
 
 # Print summary of settings
 print("Summary of settings:")
