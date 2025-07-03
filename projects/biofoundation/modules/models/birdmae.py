@@ -21,8 +21,8 @@ class BirdMAEModel(ViT):
     """
 
     EMBEDDING_SIZE = 1024
-    MEAN = -4.2677393
-    STD = 4.5689974
+    MEAN = -7.2
+    STD = 4.43
 
     def __init__(
         self,
