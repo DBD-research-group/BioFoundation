@@ -125,7 +125,13 @@ class PerchModel(BioFoundationModel):
             dataset_info = datasets.load_dataset_builder(
                 self.hf_path, self.hf_name
             ).info
-            dataset_classlabels = dataset_info.features["ebird_code"].names
+            if self.num_classes == 264:
+                dataset_classlabels = pd.read_csv(
+                    "/workspace/resources/cbi/label_ebird.csv"
+                )
+                dataset_classlabels = dataset_classlabels["ebird_code"].tolist()
+            else:
+                dataset_classlabels = dataset_info.features["ebird_code"].names
 
             # Create the class mask
             self.class_mask = [

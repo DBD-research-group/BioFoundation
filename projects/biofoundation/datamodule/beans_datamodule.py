@@ -67,7 +67,7 @@ class BEANSDataModule(BaseDataModuleHF):
             labels = set()
             for split in dataset.keys():
                 labels.update(dataset[split]["labels"])
-
+            labels = sorted(labels)  # Sort to ensure consistent ordering
             label_to_id = {lbl: i for i, lbl in enumerate(labels)}
             self.id_to_label = {
                 value: key for key, value in label_to_id.items()
