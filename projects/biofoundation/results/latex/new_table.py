@@ -64,7 +64,7 @@ def format_hm_no_bold(values, color):  # This just handles values for one model
 
 
 # === BEANS === (Adjusted for one table so it returns the needed lists)
-def beans_table(path, models):
+def beans_table(path, models, restricted):
     df = pd.read_csv(path, sep=",")
 
     # Rename for convenience
@@ -97,6 +97,7 @@ def beans_table(path, models):
     # Initialize lists to store all values for later processing
     all_top1_lp, all_top1_ft, all_top1_ap = [], [], []
     all_avg_top1_lp, all_avg_top1_ft, all_avg_top1_ap = [], [], []
+    res_results = {}
 
     # Collect data for all models
     for model in models:
@@ -126,6 +127,25 @@ def beans_table(path, models):
                 & (df["Pooling"] == "attentive")
                 & (df["Restrict"] != "true")
             ]
+            # If restricted, calculate the results for the restricted model for CBI and save in a dictionary
+            if (
+                restricted
+                and dataset == "beans_cbi"
+                and (model == "surfperch" or model == "perch" or model == "convnext_bs")
+            ):
+                # Calculate restricted results in isolated form for easy removal
+                res_rows = df[
+                    (df["Model"] == model)
+                    & (df["Dataset"] == dataset)
+                    & (df["Restrict"] == True)
+                ]
+                top1_res = res_rows["Top1"].max() if not res_rows.empty else 0
+                avg_top1_res = top1_res
+                # Do the formating seperately
+                top1_res = format_values_no_bold([top1_res])[0]
+                avg_top1_res = format_hm_no_bold([avg_top1_res], "blue")[0]
+
+                res_results[model] = {"top1": top1_res, "avg_top1": avg_top1_res}
 
             top1_lp.append(
                 lp_rows["Top1"].max() if not lp_rows.empty else 0
@@ -177,6 +197,7 @@ def beans_table(path, models):
         all_avg_top1_lp,
         all_avg_top1_ft,
         all_avg_top1_ap,
+        res_results,
     )
 
 
@@ -324,7 +345,8 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
         all_avg_top1_lp_beans,
         all_avg_top1_ft_beans,
         all_avg_top1_ap_beans,
-    ) = beans_table(path_beans, models)
+        res_results_beans,
+    ) = beans_table(path_beans, models, restricted)
 
     with open(output_path, "a") as f:
         for i, model in enumerate(models):
@@ -366,6 +388,9 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
                 cmap_res = format_values_no_bold(cmap_res)
                 avg_cmap_res = format_hm_no_bold([avg_cmap_res], "blue")[0]
 
+                # Add the restricted results to the beans cbi results
+                all_top1_ap_beans[i][2] = res_results_beans[model]["top1"]
+                all_avg_top1_ap_beans[i] = res_results_beans[model]["avg_top1"]
                 # TODO: Add for beans if it works with CBI
                 f.write(
                     f" & {{Restricted}} & "

@@ -6,6 +6,10 @@ defaults:
 
 train: False
 
+logger:
+  wandb:
+    name: ${module.network.model_name}_restricted_BEANS_${datamodule.dataset.dataset_name}_${seed}_${start_time}
+
 module:
   network:
     model: 
