@@ -13,7 +13,10 @@ tags: ["biofoundation", "BirdSet", "restrict", "${module.network.model_name}"]
 seed: 1
 train: False
 test: True
- 
+
+trainer:
+  devices: [1]
+   
 logger:
   wandb:
     tags: ${tags}

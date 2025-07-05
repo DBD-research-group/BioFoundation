@@ -37,9 +37,9 @@ module:
     model:
       freeze_backbone: True
       classifier: null
-    pretrain_info:
-      hf_path: ${datamodule.dataset.hf_path}
-      hf_name: beans_cbi
+      pretrain_info:
+        hf_path: ${datamodule.dataset.hf_path}
+        hf_name: beans_cbi
  
 
 datamodule:
