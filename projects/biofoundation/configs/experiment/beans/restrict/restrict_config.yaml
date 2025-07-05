@@ -21,6 +21,9 @@ logger:
     mode: online
     version: ${module.network.model_name}_restrict_BEANS_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
 
+trainer:
+  devices: [1]
+
 module:
   optimizer:
     lr: 5e-3
@@ -36,7 +39,7 @@ module:
       classifier: null
     pretrain_info:
       hf_path: ${datamodule.dataset.hf_path}
-      hf_name: ${datamodule.dataset.hf_name}
+      hf_name: beans_cbi
  
 
 datamodule:
