@@ -160,7 +160,7 @@ class ConvNextModule(BioFoundationModel):
             torch.Tensor: The output of the ConvNext model.
         """
         if self.preprocess_in_model:
-            input_values = self._preprocess(input_values)
+            input_values = self.preprocess(input_values)
         if self.classifier is not None:
             embeddings = self.get_embeddings(input_values)
             logits = self.classifier(embeddings)
@@ -268,7 +268,7 @@ class ConvNextEmbedding(nn.Module):
             )
             self.model = ConvNextModel(config)
 
-    def _preprocess(
+    def preprocess(
         self, input_values: torch.Tensor, input_tdim=500, sample_rate=32000
     ) -> torch.Tensor:
         """
