@@ -33,6 +33,7 @@ class ConvNextModule(BioFoundationModel):
         freeze_backbone: bool = False,
         preprocess_in_model: bool = False,
         classifier: nn.Module | None = None,
+        restrict_logits: bool = False,
         num_channels: int = 1,
         checkpoint: str = "DBD-research-group/ConvNeXT-Base-BirdSet-XCL",
         local_checkpoint: Optional[str] = None,
@@ -74,7 +75,7 @@ class ConvNextModule(BioFoundationModel):
             pretrain_info=pretrain_info,
             pooling=pooling,
         )
-
+        self.restrict_logits = restrict_logits  # This is just for logging purposes as restriction is handled in base_module.py
         self.config = self.model.config
 
         if self.pooling == "default":

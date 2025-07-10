@@ -1,0 +1,33 @@
+# @package _global_
+#package global is neccessary!
+defaults:
+  - birdset/restrict/restrict_config.yaml 
+  - override /module/network: perch_inference.yaml  
+
+train: False
+
+logger:
+  wandb:
+    name: ${module.network.model_name}_restricted_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time}
+
+module:
+  network:
+    model:
+      classifier: null
+      pretrain_info:
+        hf_path: ${datamodule.dataset.hf_path}
+        hf_name: ${datamodule.dataset.hf_name}
+        hf_pretrain_name: XCL
+        valid_test_only: False
+      restrict_logits: True
+
+datamodule:
+  transforms:
+    preprocessing:
+      normalize_waveform: "instance_peak_normalization"
+  dataset:
+    val_split: null
+    class_weights_loss: null
+    class_weights_sampler: null
+    classlimit: null
+    eventlimit: null

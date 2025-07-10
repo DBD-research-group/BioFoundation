@@ -9,6 +9,7 @@ from typing import Callable, List, Literal, Type, Optional, Union
 from torch.nn import CrossEntropyLoss
 from torch.nn.modules.loss import _Loss
 from torch.optim import AdamW, Optimizer
+import pandas as pd
 
 from birdset.configs import (
     NetworkConfig,
@@ -148,11 +149,19 @@ class BaseModule(L.LightningModule):
             pretrain_classlabels = datasets.load_dataset_builder(
                 self.hf_path, self.pretrain_dataset
             ).info.features["ebird_code"]
-            dataset_classlabels = datasets.load_dataset_builder(
-                self.hf_path, self.hf_name
-            ).info.features["ebird_code"]
+            if self.hf_name == "beans_cbi":
+                dataset_classlabels = pd.read_csv(
+                    "/workspace/resources/cbi/label_ebird.csv"
+                )
+                dataset_classlabels = dataset_classlabels["ebird_code"].tolist()
+            else:
+                dataset_classlabels = (
+                    datasets.load_dataset_builder(self.hf_path, self.hf_name)
+                    .info.features["ebird_code"]
+                    .names
+                )
             self.class_mask = [
-                pretrain_classlabels.names.index(i) for i in dataset_classlabels.names
+                pretrain_classlabels.names.index(i) for i in dataset_classlabels
             ]
 
     def forward(self, *args, **kwargs):

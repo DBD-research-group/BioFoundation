@@ -33,6 +33,7 @@ class BioFoundationModel(nn.Module):
 
         if pretrain_info:
             self.hf_path = pretrain_info.hf_path
+            self.pretrain_name = pretrain_info.hf_pretrain_name
             self.hf_name = (
                 pretrain_info.hf_name
                 if not pretrain_info.hf_pretrain_name

@@ -64,8 +64,9 @@ def format_hm_no_bold(values, color):  # This just handles values for one model
 
 
 # === BEANS === (Adjusted for one table so it returns the needed lists)
-def beans_table(path, models):
+def beans_table(path, models, restricted, auroc):
     df = pd.read_csv(path, sep=",")
+    metric = "Top1" if not auroc else "auroc"
 
     # Rename for convenience
     df = df.rename(
@@ -75,6 +76,7 @@ def beans_table(path, models):
             "tags": "Tags",
             "module.network.model.pooling": "Pooling",
             "test/MulticlassAccuracy": "Top1",
+            "test/AUROC": "auroc",
             "module.network.model.restrict_logits": "Restrict",
         }
     )
@@ -83,7 +85,7 @@ def beans_table(path, models):
     # df["Restrict"] = df["Tags"].str.contains("restrict", case=False)
 
     # Convert scores to percentage
-    df["Top1"] *= 100
+    df[metric] *= 100
 
     datasets = [
         "beans_watkins",
@@ -97,6 +99,7 @@ def beans_table(path, models):
     # Initialize lists to store all values for later processing
     all_top1_lp, all_top1_ft, all_top1_ap = [], [], []
     all_avg_top1_lp, all_avg_top1_ft, all_avg_top1_ap = [], [], []
+    res_results = {}
 
     # Collect data for all models
     for model in models:
@@ -126,15 +129,34 @@ def beans_table(path, models):
                 & (df["Pooling"] == "attentive")
                 & (df["Restrict"] != "true")
             ]
+            # If restricted, calculate the results for the restricted model for CBI and save in a dictionary
+            if (
+                restricted
+                and dataset == "beans_cbi"
+                and (model == "surfperch" or model == "perch" or model == "convnext_bs")
+            ):
+                # Calculate restricted results in isolated form for easy removal
+                res_rows = df[
+                    (df["Model"] == model)
+                    & (df["Dataset"] == dataset)
+                    & (df["Restrict"] == True)
+                ]
+                top1_res = res_rows[metric].max() if not res_rows.empty else 0
+                avg_top1_res = top1_res
+                # Do the formating seperately
+                top1_res = format_values_no_bold([top1_res])[0]
+                avg_top1_res = format_hm_no_bold([avg_top1_res], "blue")[0]
+
+                res_results[model] = {"top1": top1_res, "avg_top1": avg_top1_res}
 
             top1_lp.append(
-                lp_rows["Top1"].max() if not lp_rows.empty else 0
+                lp_rows[metric].max() if not lp_rows.empty else 0
             )  # Max value for LP Top1
             top1_ft.append(
-                ft_rows["Top1"].max() if not ft_rows.empty else 0
+                ft_rows[metric].max() if not ft_rows.empty else 0
             )  # Max value for FT Top1
             top1_ap.append(
-                ap_rows["Top1"].max() if not ap_rows.empty else 0
+                ap_rows[metric].max() if not ap_rows.empty else 0
             )  # Max value for AP Top1
         # Averages
         avg_top1_lp = (
@@ -177,11 +199,12 @@ def beans_table(path, models):
         all_avg_top1_lp,
         all_avg_top1_ft,
         all_avg_top1_ap,
+        res_results,
     )
 
 
 # === BirdSet ===
-def birdset_table(models, model_names, path, path_beans, finetuning, restricted):
+def birdset_table(models, model_names, path, path_beans, finetuning, restricted, auroc):
     df = pd.read_csv(path, sep=",")
 
     # Rename for convenience
@@ -192,6 +215,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
             "tags": "Tags",
             "module.network.model.pooling": "Pooling",
             "test/cmAP5": "Cmap",
+            "test/MultilabelAUROC": "auroc",
             "module.network.model.restrict_logits": "Restrict",
         }
     )
@@ -200,7 +224,9 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
     # df["Restrict"] = df["Tags"].str.contains("restrict", case=False)
 
     # Convert scores to percentage
-    df["Cmap"] *= 100
+    metric = "Cmap" if not auroc else "auroc"
+
+    df[metric] *= 100
 
     datasets = [
         "POW",
@@ -273,12 +299,12 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
             ]
 
             cmap_lp.append(
-                lp_rows["Cmap"].max() if not lp_rows.empty else 0
+                lp_rows[metric].max() if not lp_rows.empty else 0
             )  # Max value for LP Cmap
             cmap_ft.append(
-                ft_rows["Cmap"].max() if not ft_rows.empty else 0
+                ft_rows[metric].max() if not ft_rows.empty else 0
             )  # Max value for FT Cmap
-            cmap_ap.append(ap_rows["Cmap"].max() if not ap_rows.empty else 0)
+            cmap_ap.append(ap_rows[metric].max() if not ap_rows.empty else 0)
         # Averages without the first (0th) column POW
         avg_cmap_lp = (
             round(np.mean([x for i, x in enumerate(cmap_lp) if x > 0 and i != 0]), 1)
@@ -324,7 +350,8 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
         all_avg_top1_lp_beans,
         all_avg_top1_ft_beans,
         all_avg_top1_ap_beans,
-    ) = beans_table(path_beans, models)
+        res_results_beans,
+    ) = beans_table(path_beans, models, restricted, auroc)
 
     with open(output_path, "a") as f:
         for i, model in enumerate(models):
@@ -350,7 +377,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
                         & (df["Restrict"] == True)
                     ]
                     cmap_res.append(
-                        res_rows["Cmap"].max() if not res_rows.empty else 0
+                        res_rows[metric].max() if not res_rows.empty else 0
                     )  # Max value for Res Cmap
                 avg_cmap_res = (
                     round(
@@ -366,6 +393,9 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted)
                 cmap_res = format_values_no_bold(cmap_res)
                 avg_cmap_res = format_hm_no_bold([avg_cmap_res], "blue")[0]
 
+                # Add the restricted results to the beans cbi results
+                all_top1_ap_beans[i][2] = res_results_beans[model]["top1"]
+                all_avg_top1_ap_beans[i] = res_results_beans[model]["avg_top1"]
                 # TODO: Add for beans if it works with CBI
                 f.write(
                     f" & {{Restricted}} & "
@@ -438,6 +468,7 @@ CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
 FINETUNING = False  # Set to True if you want to include finetuning results
 RESTRICTED = True  # Set to True to use Perch, Surfperch, Convnext_Bs restricted models
+AUROC = False  # Set to True to use AUROC instead of Top1
 
 # Print summary of settings
 print("Summary of settings:")
@@ -446,4 +477,6 @@ for model, model_name in zip(MODELS, MODEL_NAMES):
     print(f"  {model} -> {model_name}")
 print(f"Finetuning: {FINETUNING}")
 
-birdset_table(MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, RESTRICTED)
+birdset_table(
+    MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, RESTRICTED, AUROC
+)

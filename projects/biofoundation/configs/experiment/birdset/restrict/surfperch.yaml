@@ -1,7 +1,7 @@
 # @package _global_
 #package global is neccessary!
 defaults:
-  - birdset/linearprobing/linearprobing_config.yaml 
+  - birdset/restrict/restrict_config.yaml 
   - override /module/network: surfperch.yaml  
 
 train: False
@@ -14,8 +14,12 @@ module:
   network:
     model: 
       classifier : null
+      pretrain_info:
+        hf_path: ${datamodule.dataset.hf_path}
+        hf_name: ${datamodule.dataset.hf_name}
+        hf_pretrain_name: XCL
+        valid_test_only: False
       restrict_logits: True
-      label_path: ${paths.root_dir}/resources/perch/label_updated.csv
 
 datamodule:
   transforms:
