@@ -121,11 +121,17 @@ class PerchModel(BioFoundationModel):
             # Extract the 'ebird2021' column as a list
             pretrain_classlabels = pretrain_classlabels["ebird2021"].tolist()
 
-            # Load dataset information
-            dataset_info = datasets.load_dataset_builder(
-                self.hf_path, self.hf_name
-            ).info
-            dataset_classlabels = dataset_info.features["ebird_code"].names
+            if self.hf_name == "beans_cbi":
+                dataset_classlabels = pd.read_csv(
+                    "/workspace/resources/cbi/label_ebird.csv"
+                )
+                dataset_classlabels = dataset_classlabels["ebird_code"].tolist()
+            else:
+                # Load dataset information
+                dataset_info = datasets.load_dataset_builder(
+                    self.hf_path, self.hf_name
+                ).info
+                dataset_classlabels = dataset_info.features["ebird_code"].names
 
             # Create the class mask
             self.class_mask = [

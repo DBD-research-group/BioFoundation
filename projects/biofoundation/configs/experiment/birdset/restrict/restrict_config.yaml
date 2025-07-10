@@ -9,17 +9,20 @@ defaults:
   - override /datamodule/transforms: bird_default_multilabel.yaml
   - override /paths: default.yaml
   - override /hydra: default.yaml
-tags: ["biofoundation", "BirdSet", "augmentations", "linearprobing", "${module.network.model_name}"]
+tags: ["biofoundation", "BirdSet", "restrict", "${module.network.model_name}"]
 seed: 1
-train: True
+train: False
 test: True
- 
+
+trainer:
+  devices: [1]
+   
 logger:
   wandb:
     tags: ${tags}
-    group: "biofoundation_${module.network.model_name}_linearprobing_BirdSet__${datamodule.dataset.dataset_name}"
+    group: "biofoundation_${module.network.model_name}_restrict_BirdSet__${datamodule.dataset.dataset_name}"
     mode: online
-    version: ${module.network.model_name}_linearprobing_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
+    version: ${module.network.model_name}_restrict_BirdSet_${datamodule.dataset.dataset_name}_${seed}_${start_time} #to resume train run # needs to be tested
  
 module:
   optimizer:
@@ -33,20 +36,12 @@ module:
     torch_compile: False
     model:
       freeze_backbone: True
-      classifier:
-        _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
-        num_classes: ${module.network.model.num_classes}
-        in_features: ${module.network.embedding_size}
-    # pretrain_info:
-    #   hf_path: DBD-research-group/BirdSet
-    #   hf_name: SNE
-    #   hf_pretrain_name: null
+      classifier: null
+    pretrain_info:
+      hf_path: DBD-research-group/BirdSet
+      hf_name: ${datamodule.dataset.hf_name}
  
-trainer:
-  min_epochs: 1
-  max_epochs: 15
-  devices: [1]
- 
+
 datamodule:
   dataset:
     val_split: 0.2
@@ -66,7 +61,7 @@ datamodule:
       num_workers: 16
       drop_last: True
       prefetch_factor: 2
- 
+
     valid:
       batch_size: 64
       num_workers: 16
