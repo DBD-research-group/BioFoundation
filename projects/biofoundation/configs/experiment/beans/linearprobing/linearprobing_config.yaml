@@ -9,8 +9,8 @@ defaults:
   - override /datamodule/transforms: bird_default_multiclass.yaml
   - override /paths: default.yaml
   - override /hydra: default.yaml
-tags: ["biofoundation", "BEANS", "augmentations", "linearprobing", "${module.network.model_name}"]
-seed: 1
+tags: ["biofoundation", "BEANS", "augmentations", "linearprobing", "${module.network.model_name}", "rs110725"]
+seed: 2
 train: True
 test: True
  
