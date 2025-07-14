@@ -3,3 +3,9 @@
 defaults:
   - beans/finetuning/finetuning_config.yaml 
   - override /module/network: biolingual.yaml
+  - override /datamodule/transforms: biolingual_multiclass.yaml
+
+module:
+  network:
+    model:
+      preprocess_in_model: False
