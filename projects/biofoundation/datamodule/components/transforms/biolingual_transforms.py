@@ -10,7 +10,7 @@ from typing import Literal
 from omegaconf import DictConfig
 
 
-class BiolingualTransforms(BirdSetTransformsWrapper):
+class BioLingualTransformsWrapper(BirdSetTransformsWrapper):
     """
     Biolingual Transforms wrapper for BirdSet.
     """
@@ -22,7 +22,7 @@ class BiolingualTransforms(BirdSetTransformsWrapper):
         self,
         task: Literal["multiclass", "multilabel"] = "multilabel",
         sample_rate: int = 32000,
-        model_type: Literal["vision", "waveform"] = "vision",
+        model_type: Literal["vision", "waveform"] = "waveform",
         spectrogram_augmentations: DictConfig = DictConfig(
             {}
         ),  # TODO: typing is wrong, can also be List of Augmentations
@@ -50,9 +50,10 @@ class BiolingualTransforms(BirdSetTransformsWrapper):
 
     def transform_values(self, batch):
         input_values, labels = super().transform_values(batch)
+        
         input_values = input_values.squeeze(1)
         input_values = self.processor(
-            audios=input_values.cpu().numpy(),
+            audios=input_values.numpy(),
             return_tensors="pt",
             sampling_rate=48000,
         ).input_features

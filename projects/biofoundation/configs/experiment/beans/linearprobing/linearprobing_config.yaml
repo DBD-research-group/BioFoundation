@@ -13,6 +13,7 @@ tags: ["biofoundation", "BEANS", "augmentations", "linearprobing", "${module.net
 seed: 2
 train: True
 test: True
+
  
 logger:
   wandb:
@@ -47,7 +48,7 @@ module:
 trainer:
   min_epochs: 1
   max_epochs: 50
-  devices: [3]
+  devices: [0]
  
 datamodule:
   dataset:
