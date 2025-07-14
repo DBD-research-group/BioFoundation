@@ -3,7 +3,7 @@
 defaults:
   - birdset/linearprobing/linearprobing_config.yaml 
   - override /module/network: biolingual.yaml
-  - override /datamodule/transforms: biolingual_multiclass.yaml
+  - override /datamodule/transforms: biolingual_multilabel.yaml
 
 module:
   network:
