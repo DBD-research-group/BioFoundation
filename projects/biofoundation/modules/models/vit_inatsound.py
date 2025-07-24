@@ -207,7 +207,7 @@ class Vit_iNatSoundModel(ViT):
 
         return logits
 
-    def preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
+    def _preprocess(self, input_values: torch.Tensor) -> torch.Tensor:
         """
         Process the input values with the audio to image converter and normalizer.
         Uses GPU batch processing for efficiency.

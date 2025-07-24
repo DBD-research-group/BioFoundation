@@ -1,0 +1,4 @@
+extract_embeddings:
+  _target_: biofoundation.callbacks.extract_embeddings.ExtractEmbeddings
+  output_dir: ${paths.root_dir}/projects/biofoundation/notebooks/embedding_outputs
+  dataset: ${datamodule.dataset.dataset_name}

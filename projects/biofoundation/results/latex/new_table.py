@@ -112,7 +112,7 @@ def beans_table(path, models, restricted, auroc):
                 & (df["Tags"].str.contains("linearprobing"))
                 & (df["Pooling"] != "attentive")
                 & (df["Pooling"] != "average")
-                & (df["Restrict"] != "true")
+                & (df["Restrict"] != True)
             ]
             ft_rows = df[
                 (df["Model"] == model)
@@ -120,14 +120,14 @@ def beans_table(path, models, restricted, auroc):
                 & (df["Tags"].str.contains("finetune|finetuning"))
                 & (df["Pooling"] != "attentive")
                 & (df["Pooling"] != "average")
-                & (df["Restrict"] != "true")
+                & (df["Restrict"] != True)
             ]
 
             ap_rows = df[
                 (df["Model"] == model)
                 & (df["Dataset"] == dataset)
                 & (df["Pooling"] == "attentive")
-                & (df["Restrict"] != "true")
+                & (df["Restrict"] != True)
             ]
             # If restricted, calculate the results for the restricted model for CBI and save in a dictionary
             if (
@@ -394,13 +394,13 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
                 avg_cmap_res = format_hm_no_bold([avg_cmap_res], "blue")[0]
 
                 # Add the restricted results to the beans cbi results
-                all_top1_ap_beans[i][2] = res_results_beans[model]["top1"]
-                all_avg_top1_ap_beans[i] = res_results_beans[model]["avg_top1"]
+                cbi_results = ["-"] * len(all_top1_ap_beans[i])
+                cbi_results[2] = res_results_beans[model]["top1"]
                 # TODO: Add for beans if it works with CBI
                 f.write(
                     f" & {{Restricted}} & "
-                    + " & ".join(all_top1_ap_beans[i])
-                    + f" & {all_avg_top1_ap_beans[i]} &"
+                    + " & ".join(cbi_results)
+                    + f" & - &"
                     + " & ".join(cmap_res)
                     + f" & {avg_cmap_res} \\\\ \n"
                 )
@@ -468,7 +468,7 @@ CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
 FINETUNING = False  # Set to True if you want to include finetuning results
 RESTRICTED = True  # Set to True to use Perch, Surfperch, Convnext_Bs restricted models
-AUROC = False  # Set to True to use AUROC instead of Top1
+AUROC = True  # Set to True to use AUROC instead of Top1
 
 # Print summary of settings
 print("Summary of settings:")
