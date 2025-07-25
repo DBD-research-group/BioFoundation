@@ -5,9 +5,9 @@
 
 # Default values
 default_models=("perch")
-default_seeds=(1)
+default_seeds=(3)
 default_dnames=("PER" "POW" "NES" "UHH" "HSN" "NBP" "SSW" "SNE")
-default_timeouts=(240 240 240 240 240 240 240 240) # All 2 hours for now
+default_timeouts=(640 440 440 440 440 440 640 640) # All 2 hours for now
 default_tags=()
 gpu=0
 extras=""
@@ -55,7 +55,7 @@ tags=("${tags[@]:-${default_tags[@]}}")
 if [ -z "$config_path" ]; then
   echo "Error: --config is required"
   echo "Usage: $0 --config <path> [--models <model1,model2,...>] [--seeds <seed1,seed2,...>] [--datasets <dataset1,dataset2,...>] [--tags <tag1,tag2,...>] [--gpu <gpu_id>] [--timeout <timeout_in_minutes>] [--extras <extra_args>]"
-  echo "Example: ./projects/biofoundation/scripts/run_birdset.sh --config birdset/linearprobing --models convnext_bs --datasets PER,NES,UHH --gpu 1"
+  echo "Example: ./projects/biofoundation/scripts/run_birdset.sh --config linearprobing --models convnext_bs --datasets PER,NES,UHH --gpu 1"
   exit 1
 fi
 
@@ -116,7 +116,7 @@ for model in "${models[@]}"; do
 
     projects/biofoundation/train_anti_crash.sh \
       $timeout \
-      experiment="$config_path/$model" \
+      experiment="birdset/$config_path/$model" \
       seed=$seeds \
       trainer.devices=[$gpu] \
       datamodule.dataset.dataset_name=$dname \

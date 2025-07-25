@@ -5,7 +5,7 @@
 
 # Default values
 default_models=("perch")
-default_seeds=(1)
+default_seeds=(3)
 default_dnames=("beans_watkins" "beans_cbi" "beans_dogs" "beans_humbugdb" "beans_bats")
 default_dclasses=(31 264 10 14 10)
 default_timeouts=(120 300 120 230 140)
@@ -57,7 +57,7 @@ tags=("${tags[@]:-${default_tags[@]}}")
 if [ -z "$config_path" ]; then
   echo "Error: --config is required"
   echo "Usage: $0 --config <path> [--models <model1,model2,...>] [--seeds <seed1,seed2,...>] [--datasets <dataset1,dataset2,...>] [--tags <tag1,tag2,...>] [--gpu <gpu_id>] [--timeout <timeout_in_minutes>] [--extras <extra_args>]"
-  echo "Example: ./projects/biofoundation/scripts/run_beans.sh --config beans/linearprobing --models convnext_bs --datasets beans_watkins,beans_cbi --gpu 1"
+  echo "Example: ./projects/biofoundation/scripts/run_beans.sh --config linearprobing --models convnext_bs --datasets beans_watkins,beans_cbi --gpu 1"
   exit 1
 fi
 
@@ -121,7 +121,7 @@ for model in "${models[@]}"; do
 
     projects/biofoundation/train_anti_crash.sh \
       $timeout \
-      experiment="$config_path/$model" \
+      experiment="beans/$config_path/$model" \
       seed=$seeds \
       trainer.devices=[$gpu] \
       datamodule.dataset.dataset_name=$dname \
