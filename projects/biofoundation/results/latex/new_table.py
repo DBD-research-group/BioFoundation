@@ -6,30 +6,122 @@ import sys
 import numpy
 
 
+def calculate_mean_std(values):
+    """Calculate mean and std from a list of values and return as separate values"""
+    if not values or all(v == 0 for v in values):
+        return None, None
+    
+    valid_values = [v for v in values if v > 0]
+    if not valid_values:
+        return None, None
+    
+    mean_val = np.mean(valid_values)
+    std_val = np.std(valid_values, ddof=1) if len(valid_values) > 1 else 0
+    
+    return mean_val, std_val
+
+
+def format_mean_std_display(mean_val, std_val):
+    """Format mean and std for display as MM.mm\\scriptsize{$\\pm$ std}"""
+    if mean_val is None or std_val is None:
+        return "-"
+    return f"{mean_val:.2f}\\scriptsize{{$\\pm$ {std_val:.2f}}}"
+
+
 # === Functions ===
 # Format row with LaTeX
 def format_values(values):
     # Transpose the list of lists to treat each position as a column
-    columns = np.array(values).T
+    columns = np.array(values, dtype=object).T
     formatted_columns = []
 
     for col in columns:
-        rounded = np.round(col, 1)
-        max_idx = np.argmax(rounded)
-        second_max_idx = np.argsort(rounded)[-2]
-        formatted = [f"{val:.1f}" if val > 0 else "-" for val in rounded]
-        formatted[max_idx] = f"\\textbf{{{rounded[max_idx]:.1f}}}"
-        formatted[second_max_idx] = f"\\underline{{{rounded[second_max_idx]:.1f}}}"
+        # Extract means from the values (tuples or formatted strings)
+        means = []
+        processed_values = []
+        
+        for val in col:
+            if isinstance(val, tuple) and len(val) == 2:
+                # It's a (mean, std) tuple
+                mean_val, std_val = val
+                if mean_val is not None:
+                    means.append(mean_val)
+                    processed_values.append(format_mean_std_display(mean_val, std_val))
+                else:
+                    means.append(0)
+                    processed_values.append("-")
+            elif isinstance(val, str) and "$\\pm$" in val:
+                # Handle both old format: MM.mm($\pm$std) and new format: MM.mm\scriptsize{$\pm$ std}
+                if "($\\pm$" in val:
+                    mean_part = val.split("($\\pm$")[0]
+                elif "\\scriptsize{$\\pm$" in val:
+                    mean_part = val.split("\\scriptsize{$\\pm$")[0]
+                else:
+                    mean_part = val.split("$\\pm$")[0]
+                means.append(float(mean_part))
+                processed_values.append(val)
+            elif isinstance(val, str) and val != "-":
+                try:
+                    means.append(float(val))
+                    processed_values.append(val)
+                except ValueError:
+                    means.append(0)
+                    processed_values.append("-")
+            else:
+                means.append(0)
+                processed_values.append("-")
+        
+        means = np.array(means)
+        max_idx = np.argmax(means)
+        second_max_idx = np.argsort(means)[-2] if len(means) > 1 else 0
+        
+        formatted = []
+        for i, val in enumerate(processed_values):
+            if val == "-":
+                formatted.append("-")
+            elif i == max_idx:
+                formatted.append(f"\\textbf{{{val}}}")
+            elif i == second_max_idx:
+                formatted.append(f"\\underline{{{val}}}")
+            else:
+                formatted.append(str(val))
         formatted_columns.append(formatted)
 
     # Transpose back to match the original structure
-    return np.array(formatted_columns).T.tolist()
+    return np.array(formatted_columns, dtype=object).T.tolist()
 
 
 def format_values_no_bold(values):  # This just handles values for one model
-    rounded = np.round(values, 1)
-    formatted = [f"{val:.1f}" if val > 0 else "-" for val in rounded]
-    return formatted
+    # values should be tuples (mean, std) or already processed numbers/strings
+    if isinstance(values, list):
+        formatted = []
+        for val in values:
+            if isinstance(val, tuple) and len(val) == 2:
+                # It's a (mean, std) tuple
+                mean_val, std_val = val
+                if mean_val is not None:
+                    formatted.append(format_mean_std_display(mean_val, std_val))
+                else:
+                    formatted.append("-")
+            elif isinstance(val, str):
+                formatted.append(val)
+            elif val > 0:
+                formatted.append(f"{val:.1f}")
+            else:
+                formatted.append("-")
+        return formatted
+    else:
+        # Handle single value
+        if isinstance(values, tuple) and len(values) == 2:
+            mean_val, std_val = values
+            if mean_val is not None:
+                return format_mean_std_display(mean_val, std_val)
+            else:
+                return "-"
+        else:
+            rounded = np.round(values, 1)
+            formatted = [f"{val:.1f}" if val > 0 else "-" for val in rounded]
+            return formatted
 
 
 def format_name(name):
@@ -46,20 +138,90 @@ def format_name(name):
 
 
 def format_hm(values, color):
-    rounded = np.round(values, 1)
-    max_idx = np.argmax(rounded)
-    second_max_idx = np.argsort(rounded)[-2]
-    formatted = [f"\\heat{color}{{{val:.1f}}}" if val > 0 else "-" for val in rounded]
-    formatted[max_idx] = f"\\heat{color}[bold]{{{rounded[max_idx]:.1f}}}"
-    formatted[second_max_idx] = (
-        f"\\heat{color}[underline]{{{rounded[second_max_idx]:.1f}}}"
-    )
+    # Handle both tuples (mean, std) and formatted strings
+    means = []
+    processed_values = []
+    
+    for val in values:
+        if isinstance(val, tuple) and len(val) == 2:
+            # It's a (mean, std) tuple
+            mean_val, std_val = val
+            if mean_val is not None:
+                means.append(mean_val)
+                processed_values.append((mean_val, std_val))
+            else:
+                means.append(0)
+                processed_values.append("-")
+        elif isinstance(val, str) and "$\\pm$" in val:
+            # Handle both old format: MM.mm($\pm$std) and new format: MM.mm\scriptsize{$\pm$ std}
+            if "($\\pm$" in val:
+                mean_part = val.split("($\\pm$")[0]
+            elif "\\scriptsize{$\\pm$" in val:
+                mean_part = val.split("\\scriptsize{$\\pm$")[0]
+            else:
+                mean_part = val.split("$\\pm$")[0]
+            means.append(float(mean_part))
+            processed_values.append(val)
+        elif isinstance(val, str) and val != "-":
+            try:
+                means.append(float(val))
+                processed_values.append(val)
+            except ValueError:
+                means.append(0)
+                processed_values.append("-")
+        else:
+            means.append(0 if val != "-" else 0)
+            processed_values.append("-")
+    
+    means = np.array(means)
+    max_idx = np.argmax(means)
+    second_max_idx = np.argsort(means)[-2] if len(means) > 1 else 0
+    
+    formatted = []
+    for i, val in enumerate(processed_values):
+        if val == "-":
+            formatted.append("-")
+        elif isinstance(val, tuple):
+            mean_val, std_val = val
+            if mean_val is None:
+                formatted.append("-")
+            elif i == max_idx:
+                formatted.append(f"\\heat{color}[bold]{{{mean_val:.2f}}}")
+            elif i == second_max_idx:
+                formatted.append(f"\\heat{color}[underline]{{{mean_val:.2f}}}")
+            else:
+                formatted.append(f"\\heat{color}{{{mean_val:.2f}}}")
+        else:
+            # Handle legacy formatted strings
+            if i == max_idx:
+                formatted.append(f"\\heat{color}[bold]{{\\text{{{val}}}}}")
+            elif i == second_max_idx:
+                formatted.append(f"\\heat{color}[underline]{{\\text{{{val}}}}}")
+            else:
+                formatted.append(f"\\heat{color}{{\\text{{{val}}}}}")
     return formatted
 
 
 def format_hm_no_bold(values, color):  # This just handles values for one model
-    rounded = np.round(values, 1)
-    formatted = [f"\\heat{color}{{{val:.1f}}}" if val > 0 else "-" for val in rounded]
+    formatted = []
+    for val in values:
+        if isinstance(val, tuple) and len(val) == 2:
+            # It's a (mean, std) tuple
+            mean_val, std_val = val
+            if mean_val is None:
+                formatted.append("-")
+            else:
+                formatted.append(f"\\heat{color}{{{mean_val:.2f}}}")
+        elif isinstance(val, str):
+            if val == "-" or val == "0":
+                formatted.append("-")
+            else:
+                # Legacy formatted string - protect from PGF parsing
+                formatted.append(f"\\heat{color}{{\\text{{{val}}}}}")
+        elif val > 0:
+            formatted.append(f"\\heat{color}{{{val:.1f}}}")
+        else:
+            formatted.append("-")
     return formatted
 
 
@@ -101,6 +263,8 @@ def beans_table(path, models, restricted, auroc):
     all_avg_top1_lp, all_avg_top1_ft, all_avg_top1_ap = [], [], []
     res_results = {}
 
+    print(f"Processing {len(models)} models for beans table...")
+
     # Collect data for all models
     for model in models:
         top1_lp, top1_ft, top1_ap = [], [], []
@@ -141,39 +305,41 @@ def beans_table(path, models, restricted, auroc):
                     & (df["Dataset"] == dataset)
                     & (df["Restrict"] == True)
                 ]
-                top1_res = res_rows[metric].max() if not res_rows.empty else 0
+                top1_res_values = res_rows[metric].tolist() if not res_rows.empty else []
+                top1_res = calculate_mean_std(top1_res_values)
                 avg_top1_res = top1_res
-                # Do the formating seperately
+                # Do the formatting separately
                 top1_res = format_values_no_bold([top1_res])[0]
                 avg_top1_res = format_hm_no_bold([avg_top1_res], "blue")[0]
 
                 res_results[model] = {"top1": top1_res, "avg_top1": avg_top1_res}
 
-            top1_lp.append(
-                lp_rows[metric].max() if not lp_rows.empty else 0
-            )  # Max value for LP Top1
-            top1_ft.append(
-                ft_rows[metric].max() if not ft_rows.empty else 0
-            )  # Max value for FT Top1
-            top1_ap.append(
-                ap_rows[metric].max() if not ap_rows.empty else 0
-            )  # Max value for AP Top1
-        # Averages
-        avg_top1_lp = (
-            np.round(np.mean([x for x in top1_lp if x > 0]), 1)
-            if any(x > 0 for x in top1_lp)
-            else 0
-        )
-        avg_top1_ft = (
-            np.round(np.mean([x for x in top1_ft if x > 0]), 1)
-            if any(x > 0 for x in top1_ft)
-            else 0
-        )
-        avg_top1_ap = (
-            np.round(np.mean([x for x in top1_ap if x > 0]), 1)
-            if any(x > 0 for x in top1_ap)
-            else 0
-        )
+            # Calculate mean and std instead of max
+            lp_values = lp_rows[metric].tolist() if not lp_rows.empty else []
+            ft_values = ft_rows[metric].tolist() if not ft_rows.empty else []
+            ap_values = ap_rows[metric].tolist() if not ap_rows.empty else []
+            
+            top1_lp.append(calculate_mean_std(lp_values))
+            top1_ft.append(calculate_mean_std(ft_values))
+            top1_ap.append(calculate_mean_std(ap_values))
+        # Averages - calculate from the mean values extracted from tuples
+        lp_means = []
+        ft_means = []
+        ap_means = []
+        
+        for val in top1_lp:
+            if isinstance(val, tuple) and len(val) == 2 and val[0] is not None:
+                lp_means.append(val[0])  # Extract mean from tuple
+        for val in top1_ft:
+            if isinstance(val, tuple) and len(val) == 2 and val[0] is not None:
+                ft_means.append(val[0])  # Extract mean from tuple
+        for val in top1_ap:
+            if isinstance(val, tuple) and len(val) == 2 and val[0] is not None:
+                ap_means.append(val[0])  # Extract mean from tuple
+        
+        avg_top1_lp = calculate_mean_std(lp_means)
+        avg_top1_ft = calculate_mean_std(ft_means)
+        avg_top1_ap = calculate_mean_std(ap_means)
 
         # Store all values for later processing
         all_top1_lp.append(top1_lp)
@@ -183,10 +349,60 @@ def beans_table(path, models, restricted, auroc):
         all_avg_top1_ft.append(avg_top1_ft)
         all_avg_top1_ap.append(avg_top1_ap)
 
+    print(f"Collected data for {len(all_top1_lp)} models in beans table")
+
     # Determine the highest and second highest values and write LaTeX
-    all_top1_lp = format_values(all_top1_lp)
-    all_top1_ft = format_values(all_top1_ft)
-    all_top1_ap = format_values(all_top1_ap)
+    # Instead of using format_values which transposes, we need a different approach for tuples
+    print("Formatting LP data...")
+    
+    # Convert tuples to formatted strings first
+    processed_lp = []
+    for model_data in all_top1_lp:
+        model_row = []
+        for val in model_data:
+            if isinstance(val, tuple) and len(val) == 2:
+                mean_val, std_val = val
+                if mean_val is not None:
+                    model_row.append(format_mean_std_display(mean_val, std_val))
+                else:
+                    model_row.append("-")
+            else:
+                model_row.append("-")
+        processed_lp.append(model_row)
+    
+    # Now apply the formatting for bold/underline
+    all_top1_lp = format_values(processed_lp)
+    
+    # Do the same for FT and AP data
+    processed_ft = []
+    for model_data in all_top1_ft:
+        model_row = []
+        for val in model_data:
+            if isinstance(val, tuple) and len(val) == 2:
+                mean_val, std_val = val
+                if mean_val is not None:
+                    model_row.append(format_mean_std_display(mean_val, std_val))
+                else:
+                    model_row.append("-")
+            else:
+                model_row.append("-")
+        processed_ft.append(model_row)
+    all_top1_ft = format_values(processed_ft)
+    
+    processed_ap = []
+    for model_data in all_top1_ap:
+        model_row = []
+        for val in model_data:
+            if isinstance(val, tuple) and len(val) == 2:
+                mean_val, std_val = val
+                if mean_val is not None:
+                    model_row.append(format_mean_std_display(mean_val, std_val))
+                else:
+                    model_row.append("-")
+            else:
+                model_row.append("-")
+        processed_ap.append(model_row)
+    all_top1_ap = format_values(processed_ap)
 
     all_avg_top1_lp = format_hm(all_avg_top1_lp, "green")
     all_avg_top1_ft = format_hm(all_avg_top1_ft, "red")
@@ -270,6 +486,8 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
     all_cmap_lp, all_cmap_ft, all_cmap_ap = [], [], []
     all_avg_cmap_lp, all_avg_cmap_ft, all_avg_cmap_ap = [], [], []
 
+    print(f"Processing BirdSet data for {len(models)} models...")
+
     # Collect data for all models
     for model in models:
         cmap_lp, cmap_ft, cmap_ap = [], [], []
@@ -299,29 +517,33 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
             ]
 
             cmap_lp.append(
-                lp_rows[metric].max() if not lp_rows.empty else 0
-            )  # Max value for LP Cmap
+                calculate_mean_std(lp_rows[metric].tolist()) if not lp_rows.empty else "-"
+            )  # Mean±std for LP Cmap
             cmap_ft.append(
-                ft_rows[metric].max() if not ft_rows.empty else 0
-            )  # Max value for FT Cmap
-            cmap_ap.append(ap_rows[metric].max() if not ap_rows.empty else 0)
-        # Averages without the first (0th) column POW
-        avg_cmap_lp = (
-            round(np.mean([x for i, x in enumerate(cmap_lp) if x > 0 and i != 0]), 1)
-            if any(x > 0 and i != 0 for i, x in enumerate(cmap_lp))
-            else 0
-        )
-        avg_cmap_ft = (
-            round(np.mean([x for i, x in enumerate(cmap_ft) if x > 0 and i != 0]), 1)
-            if any(x > 0 and i != 0 for i, x in enumerate(cmap_ft))
-            else 0
-        )
-
-        avg_cmap_ap = (
-            round(np.mean([x for i, x in enumerate(cmap_ap) if x > 0 and i != 0]), 1)
-            if any(x > 0 and i != 0 for i, x in enumerate(cmap_ap))
-            else 0
-        )
+                calculate_mean_std(ft_rows[metric].tolist()) if not ft_rows.empty else "-"
+            )  # Mean±std for FT Cmap
+            cmap_ap.append(
+                calculate_mean_std(ap_rows[metric].tolist()) if not ap_rows.empty else "-"
+            )  # Mean±std for AP Cmap
+        # Averages without the first (0th) column POW - calculate from the mean values
+        # Extract numeric means from the tuples for average calculation
+        lp_means = []
+        ft_means = []
+        ap_means = []
+        
+        for i, val in enumerate(cmap_lp):
+            if i != 0 and val != "-" and isinstance(val, tuple) and len(val) == 2 and val[0] is not None:  # Skip POW (index 0)
+                lp_means.append(val[0])  # Extract mean from tuple
+        for i, val in enumerate(cmap_ft):
+            if i != 0 and val != "-" and isinstance(val, tuple) and len(val) == 2 and val[0] is not None:  # Skip POW (index 0)
+                ft_means.append(val[0])  # Extract mean from tuple
+        for i, val in enumerate(cmap_ap):
+            if i != 0 and val != "-" and isinstance(val, tuple) and len(val) == 2 and val[0] is not None:  # Skip POW (index 0)
+                ap_means.append(val[0])  # Extract mean from tuple
+        
+        avg_cmap_lp = calculate_mean_std(lp_means)
+        avg_cmap_ft = calculate_mean_std(ft_means)
+        avg_cmap_ap = calculate_mean_std(ap_means)
 
         # Store all values for later processing
         all_cmap_lp.append(cmap_lp)
@@ -331,10 +553,53 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
         all_avg_cmap_lp.append(avg_cmap_lp)
         all_avg_cmap_ft.append(avg_cmap_ft)
 
-    # Determine the highest and second highest values and write LaTeX
-    all_cmap_lp = format_values(all_cmap_lp)
-    all_cmap_ft = format_values(all_cmap_ft)
-    all_cmap_ap = format_values(all_cmap_ap)
+    print(f"BirdSet data collected for {len(all_cmap_lp)} models")
+
+    # Convert tuples to strings and format
+    processed_cmap_lp = []
+    for model_data in all_cmap_lp:
+        model_row = []
+        for val in model_data:
+            if isinstance(val, tuple) and len(val) == 2:
+                mean_val, std_val = val
+                if mean_val is not None:
+                    model_row.append(format_mean_std_display(mean_val, std_val))
+                else:
+                    model_row.append("-")
+            else:
+                model_row.append("-")
+        processed_cmap_lp.append(model_row)
+    all_cmap_lp = format_values(processed_cmap_lp)
+
+    processed_cmap_ft = []
+    for model_data in all_cmap_ft:
+        model_row = []
+        for val in model_data:
+            if isinstance(val, tuple) and len(val) == 2:
+                mean_val, std_val = val
+                if mean_val is not None:
+                    model_row.append(format_mean_std_display(mean_val, std_val))
+                else:
+                    model_row.append("-")
+            else:
+                model_row.append("-")
+        processed_cmap_ft.append(model_row)
+    all_cmap_ft = format_values(processed_cmap_ft)
+    
+    processed_cmap_ap = []
+    for model_data in all_cmap_ap:
+        model_row = []
+        for val in model_data:
+            if isinstance(val, tuple) and len(val) == 2:
+                mean_val, std_val = val
+                if mean_val is not None:
+                    model_row.append(format_mean_std_display(mean_val, std_val))
+                else:
+                    model_row.append("-")
+            else:
+                model_row.append("-")
+        processed_cmap_ap.append(model_row)
+    all_cmap_ap = format_values(processed_cmap_ap)
 
     # Format cmap values for heatmap
     all_avg_cmap_lp = format_hm(all_avg_cmap_lp, "green")
@@ -376,20 +641,18 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
                         & (df["Dataset"] == dataset)
                         & (df["Restrict"] == True)
                     ]
-                    cmap_res.append(
-                        res_rows[metric].max() if not res_rows.empty else 0
-                    )  # Max value for Res Cmap
-                avg_cmap_res = (
-                    round(
-                        np.mean(
-                            [x for i, x in enumerate(cmap_res) if x > 0 and i != 0]
-                        ),
-                        1,
-                    )
-                    if any(x > 0 and i != 0 for i, x in enumerate(cmap_res))
-                    else 0
-                )
-                # Do the formating seperately
+                    res_values = res_rows[metric].tolist() if not res_rows.empty else []
+                    cmap_res.append(calculate_mean_std(res_values))
+                
+                # Calculate average excluding POW (index 0)
+                res_means = []
+                for i, val in enumerate(cmap_res):
+                    if i != 0 and val != "-" and "$\\pm$" in val:  # Skip POW (index 0)
+                        res_means.append(float(val.split("($\\pm$")[0]))
+                
+                avg_cmap_res = calculate_mean_std(res_means)
+                
+                # Do the formatting separately
                 cmap_res = format_values_no_bold(cmap_res)
                 avg_cmap_res = format_hm_no_bold([avg_cmap_res], "blue")[0]
 
