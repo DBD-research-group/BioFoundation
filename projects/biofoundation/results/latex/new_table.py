@@ -21,16 +21,19 @@ def calculate_mean_std(values):
     return mean_val, std_val
 
 
-def format_mean_std_display(mean_val, std_val):
-    """Format mean and std for display as MM.mm\\scriptsize{$\\pm$ std}"""
-    if mean_val is None or std_val is None:
+def format_mean_std_display(mean_val, std_val, show_std=True):
+    """Format mean and std for display as MM.mm\\scriptsize{$\\pm$ std} or just MM.mm"""
+    if mean_val is None:
         return "-"
-    return f"{mean_val:.2f}\\scriptsize{{$\\pm$ {std_val:.2f}}}"
+    if show_std and std_val is not None:
+        return f"{mean_val:.2f}\\scriptsize{{$\\pm$ {std_val:.2f}}}"
+    else:
+        return f"{mean_val:.2f}"
 
 
 # === Functions ===
 # Format row with LaTeX
-def format_values(values):
+def format_values(values, show_std=True):
     # Transpose the list of lists to treat each position as a column
     columns = np.array(values, dtype=object).T
     formatted_columns = []
@@ -46,7 +49,7 @@ def format_values(values):
                 mean_val, std_val = val
                 if mean_val is not None:
                     means.append(mean_val)
-                    processed_values.append(format_mean_std_display(mean_val, std_val))
+                    processed_values.append(format_mean_std_display(mean_val, std_val, show_std))
                 else:
                     means.append(0)
                     processed_values.append("-")
@@ -91,7 +94,7 @@ def format_values(values):
     return np.array(formatted_columns, dtype=object).T.tolist()
 
 
-def format_values_no_bold(values):  # This just handles values for one model
+def format_values_no_bold(values, show_std=True):  # This just handles values for one model
     # values should be tuples (mean, std) or already processed numbers/strings
     if isinstance(values, list):
         formatted = []
@@ -100,7 +103,7 @@ def format_values_no_bold(values):  # This just handles values for one model
                 # It's a (mean, std) tuple
                 mean_val, std_val = val
                 if mean_val is not None:
-                    formatted.append(format_mean_std_display(mean_val, std_val))
+                    formatted.append(format_mean_std_display(mean_val, std_val, show_std))
                 else:
                     formatted.append("-")
             elif isinstance(val, str):
@@ -115,7 +118,7 @@ def format_values_no_bold(values):  # This just handles values for one model
         if isinstance(values, tuple) and len(values) == 2:
             mean_val, std_val = values
             if mean_val is not None:
-                return format_mean_std_display(mean_val, std_val)
+                return format_mean_std_display(mean_val, std_val, show_std)
             else:
                 return "-"
         else:
@@ -226,7 +229,7 @@ def format_hm_no_bold(values, color):  # This just handles values for one model
 
 
 # === BEANS === (Adjusted for one table so it returns the needed lists)
-def beans_table(path, models, restricted, auroc):
+def beans_table(path, models, restricted, auroc, show_std=True):
     df = pd.read_csv(path, sep=",")
     metric = "Top1" if not auroc else "auroc"
 
@@ -309,7 +312,7 @@ def beans_table(path, models, restricted, auroc):
                 top1_res = calculate_mean_std(top1_res_values)
                 avg_top1_res = top1_res
                 # Do the formatting separately
-                top1_res = format_values_no_bold([top1_res])[0]
+                top1_res = format_values_no_bold([top1_res], show_std)[0]
                 avg_top1_res = format_hm_no_bold([avg_top1_res], "blue")[0]
 
                 res_results[model] = {"top1": top1_res, "avg_top1": avg_top1_res}
@@ -363,7 +366,7 @@ def beans_table(path, models, restricted, auroc):
             if isinstance(val, tuple) and len(val) == 2:
                 mean_val, std_val = val
                 if mean_val is not None:
-                    model_row.append(format_mean_std_display(mean_val, std_val))
+                    model_row.append(format_mean_std_display(mean_val, std_val, show_std))
                 else:
                     model_row.append("-")
             else:
@@ -371,7 +374,7 @@ def beans_table(path, models, restricted, auroc):
         processed_lp.append(model_row)
     
     # Now apply the formatting for bold/underline
-    all_top1_lp = format_values(processed_lp)
+    all_top1_lp = format_values(processed_lp, show_std)
     
     # Do the same for FT and AP data
     processed_ft = []
@@ -381,13 +384,13 @@ def beans_table(path, models, restricted, auroc):
             if isinstance(val, tuple) and len(val) == 2:
                 mean_val, std_val = val
                 if mean_val is not None:
-                    model_row.append(format_mean_std_display(mean_val, std_val))
+                    model_row.append(format_mean_std_display(mean_val, std_val, show_std))
                 else:
                     model_row.append("-")
             else:
                 model_row.append("-")
         processed_ft.append(model_row)
-    all_top1_ft = format_values(processed_ft)
+    all_top1_ft = format_values(processed_ft, show_std)
     
     processed_ap = []
     for model_data in all_top1_ap:
@@ -396,13 +399,13 @@ def beans_table(path, models, restricted, auroc):
             if isinstance(val, tuple) and len(val) == 2:
                 mean_val, std_val = val
                 if mean_val is not None:
-                    model_row.append(format_mean_std_display(mean_val, std_val))
+                    model_row.append(format_mean_std_display(mean_val, std_val, show_std))
                 else:
                     model_row.append("-")
             else:
                 model_row.append("-")
         processed_ap.append(model_row)
-    all_top1_ap = format_values(processed_ap)
+    all_top1_ap = format_values(processed_ap, show_std)
 
     all_avg_top1_lp = format_hm(all_avg_top1_lp, "green")
     all_avg_top1_ft = format_hm(all_avg_top1_ft, "red")
@@ -420,7 +423,7 @@ def beans_table(path, models, restricted, auroc):
 
 
 # === BirdSet ===
-def birdset_table(models, model_names, path, path_beans, finetuning, restricted, auroc):
+def birdset_table(models, model_names, path, path_beans, finetuning, restricted, auroc, show_std=True):
     df = pd.read_csv(path, sep=",")
 
     # Rename for convenience
@@ -456,7 +459,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
     ]  # This will not change often
 
     # Delete old LaTeX file if it exists
-    output_path = "projects/biofoundation/results/latex/results.tex"
+    output_path = "/workspace/projects/biofoundation/results/latex/results.tex"
     if os.path.exists(output_path):
         os.remove(output_path)
 
@@ -563,13 +566,13 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
             if isinstance(val, tuple) and len(val) == 2:
                 mean_val, std_val = val
                 if mean_val is not None:
-                    model_row.append(format_mean_std_display(mean_val, std_val))
+                    model_row.append(format_mean_std_display(mean_val, std_val, show_std))
                 else:
                     model_row.append("-")
             else:
                 model_row.append("-")
         processed_cmap_lp.append(model_row)
-    all_cmap_lp = format_values(processed_cmap_lp)
+    all_cmap_lp = format_values(processed_cmap_lp, show_std)
 
     processed_cmap_ft = []
     for model_data in all_cmap_ft:
@@ -578,13 +581,13 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
             if isinstance(val, tuple) and len(val) == 2:
                 mean_val, std_val = val
                 if mean_val is not None:
-                    model_row.append(format_mean_std_display(mean_val, std_val))
+                    model_row.append(format_mean_std_display(mean_val, std_val, show_std))
                 else:
                     model_row.append("-")
             else:
                 model_row.append("-")
         processed_cmap_ft.append(model_row)
-    all_cmap_ft = format_values(processed_cmap_ft)
+    all_cmap_ft = format_values(processed_cmap_ft, show_std)
     
     processed_cmap_ap = []
     for model_data in all_cmap_ap:
@@ -593,13 +596,13 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
             if isinstance(val, tuple) and len(val) == 2:
                 mean_val, std_val = val
                 if mean_val is not None:
-                    model_row.append(format_mean_std_display(mean_val, std_val))
+                    model_row.append(format_mean_std_display(mean_val, std_val, show_std))
                 else:
                     model_row.append("-")
             else:
                 model_row.append("-")
         processed_cmap_ap.append(model_row)
-    all_cmap_ap = format_values(processed_cmap_ap)
+    all_cmap_ap = format_values(processed_cmap_ap, show_std)
 
     # Format cmap values for heatmap
     all_avg_cmap_lp = format_hm(all_avg_cmap_lp, "green")
@@ -616,7 +619,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
         all_avg_top1_ft_beans,
         all_avg_top1_ap_beans,
         res_results_beans,
-    ) = beans_table(path_beans, models, restricted, auroc)
+    ) = beans_table(path_beans, models, restricted, auroc, show_std)
 
     with open(output_path, "a") as f:
         for i, model in enumerate(models):
@@ -647,19 +650,18 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
                 # Calculate average excluding POW (index 0)
                 res_means = []
                 for i, val in enumerate(cmap_res):
-                    if i != 0 and val != "-" and "$\\pm$" in val:  # Skip POW (index 0)
-                        res_means.append(float(val.split("($\\pm$")[0]))
+                    if i != 0 and val != "-" and isinstance(val, tuple) and len(val) == 2 and val[0] is not None:  # Skip POW (index 0)
+                        res_means.append(val[0])  # Extract mean from tuple
                 
                 avg_cmap_res = calculate_mean_std(res_means)
                 
                 # Do the formatting separately
-                cmap_res = format_values_no_bold(cmap_res)
+                cmap_res = format_values_no_bold(cmap_res, show_std)
                 avg_cmap_res = format_hm_no_bold([avg_cmap_res], "blue")[0]
 
                 # Add the restricted results to the beans cbi results
                 cbi_results = ["-"] * len(all_top1_ap_beans[i])
                 cbi_results[2] = res_results_beans[model]["top1"]
-                # TODO: Add for beans if it works with CBI
                 f.write(
                     f" & {{Restricted}} & "
                     + " & ".join(cbi_results)
@@ -727,11 +729,12 @@ MODEL_NAMES = [
     "Surf-Perch",
     "ViT-INS",
 ]  # These names will appear in the table split at "-" ordered the same as MODELS
-CSV_PATH_BEANS = "projects/biofoundation/results/latex/beans.csv"
-CSV_PATH = "projects/biofoundation/results/latex/birdset.csv"
+CSV_PATH_BEANS = "/workspace/projects/biofoundation/results/latex/beans.csv"
+CSV_PATH = "/workspace/projects/biofoundation/results/latex/birdset.csv"
 FINETUNING = False  # Set to True if you want to include finetuning results
 RESTRICTED = True  # Set to True to use Perch, Surfperch, Convnext_Bs restricted models
 AUROC = True  # Set to True to use AUROC instead of Top1
+STD = False
 
 # Print summary of settings
 print("Summary of settings:")
@@ -741,5 +744,5 @@ for model, model_name in zip(MODELS, MODEL_NAMES):
 print(f"Finetuning: {FINETUNING}")
 
 birdset_table(
-    MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, RESTRICTED, AUROC
+    MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, RESTRICTED, AUROC, STD
 )
