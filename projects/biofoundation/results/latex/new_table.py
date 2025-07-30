@@ -473,15 +473,15 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
             "\\setlength{\\tabcolsep}{2pt}\n\n"
             "\\begin{tabular}{>{\\centering\\arraybackslash}p{0.7cm} p{1.5cm} | ccccc | >{\centering\\arraybackslash}p{0.8cm} !{\\vrule width 1.3pt} cccccccc | >{\centering\\arraybackslash}p{0.8cm}}\n"
             "    \\toprule\n"
-            "    \\multicolumn{2}{c}{} & \\multicolumn{6}{c}{\\textbf{BEANS}} & \\multicolumn{9}{c}{\\makecell[c]{\\textbf{BirdSet} \\\\[-12pt] \\hspace{-7.5cm} {\\color{gray}\\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\\\\n"
+            "    \\multicolumn{2}{c}{}                 & \\multicolumn{6}{c}{\\textbf{BEANS}}       & \\multicolumn{9}{c}{\\makecell[c]{\\textbf{BirdSet}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         \\\\[-12pt] \\hspace{-7.5cm} {\\color{gray}\\scriptsize VAL}}}                                                                                                                                                                                                                                                                                                                                                                                  \\\\\n"
             "    \\addlinespace[2pt]\n"
             "    \\cline{3-17} % Ensuring cline matches actual columns\n"
             "    \\addlinespace[2pt]\n\n"
-            "    \\multicolumn{2}{c}{} & \\cellcolor{gray!25}\\textbf{\\textsc{WTK}}   & \\cellcolor{gray!25}\\textbf{\\textsc{BAT}} & \\cellcolor{gray!25}\\textbf{\\textsc{CBI}} & \\cellcolor{gray!25}\\textbf{\\textsc{DOG}} & \\cellcolor{gray!25}\\textbf{\\textsc{HUM}} & \\cellcolor{gray!25}\\textbf{\\underline{Score}}"
-            "                         & \\cellcolor{gray!25}\\textbf{\\textsc{POW}}   & \\cellcolor{gray!25}\\textbf{\\textsc{PER}} & \\cellcolor{gray!25}\\textbf{\\textsc{NES}} & \\cellcolor{gray!25}\\textbf{\\textsc{UHH}} & \\cellcolor{gray!25}\\textbf{\\textsc{HSN}} & \\cellcolor{gray!25}\\textbf{\\textsc{NBP}}   & \\cellcolor{gray!25}\\textbf{\\textsc{SSW}} & \\cellcolor{gray!25}\\textbf{\\textsc{SNE}} & \\cellcolor{gray!25}\\textbf{\\underline{Score}}                                                                         \\\\\n"
+            "    \\multicolumn{2}{c}{\\textbf{Setting}} & \\cellcolor{gray!25}\\textbf{\\textsc{WTK}} & \\cellcolor{gray!25}\\textbf{\\textsc{BAT}}         & \\cellcolor{gray!25}\\textbf{\\textsc{CBI}} & \\cellcolor{gray!25}\\textbf{\\textsc{DOG}} & \\cellcolor{gray!25}\\textbf{\\textsc{HUM}} & \\cellcolor{gray!25}\\textbf{\\underline{Score}} & \\cellcolor{gray!25}\\textbf{\\textsc{POW}} & \\cellcolor{gray!25}\\textbf{\\textsc{PER}} & \\cellcolor{gray!25}\\textbf{\\textsc{NES}} & \\cellcolor{gray!25}\\textbf{\\textsc{UHH}} & \\cellcolor{gray!25}\\textbf{\\textsc{HSN}} & \\cellcolor{gray!25}\\textbf{\\textsc{NBP}} & \\cellcolor{gray!25}\\textbf{\\textsc{SSW}} & \\cellcolor{gray!25}\\textbf{\\textsc{SNE}} & \\cellcolor{gray!25}\\textbf{\\underline{Score}}                                \\\\\n"
             "    \\addlinespace[2pt]\n"
             "    \\cline{3-17} % Adjusting cline to match new column numbers\n"
             "    \\addlinespace[2pt]\n"
+            "    \\midrule\n"
         )
 
     # === Build table rows ===
@@ -622,12 +622,23 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
     ) = beans_table(path_beans, models, restricted, auroc, show_std)
 
     with open(output_path, "a") as f:
+        # Add the first section header
+        f.write("    \\multicolumn{17}{p{5cm}}{\\textit{Baseline general audio models}} \\vspace{0.5mm}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            \\\\\n")
+        
         for i, model in enumerate(models):
+            # Check if we need to add the bioacoustic section header
+            if model in BIOACOUSTIC_MODELS and model == BIOACOUSTIC_MODELS[0]:
+                f.write("    \\midrule\n")
+                f.write("    \\multicolumn{17}{p{5cm}}{\\textit{Bioacoustic foundation models}} \\vspace{0.5mm}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            \\\\\n")
 
             # Write LaTeX to a file
             num_rows = 3 if finetuning else 2
+            
+            # Format the model name with proper spacing for the first column
+            model_name_formatted = format_name(model_names[i])
             f.write(
-                f"\\multirow{{{num_rows}}}{{*}}{{\\textbf{{{format_name(model_names[i])}}}}} & {{Linear}} & "
+                f"\\multirow{{{num_rows}}}{{*}}{{\\textbf{{{model_name_formatted}}}\n"
+                f"    }}                                   & {{Linear}}                                 & "
                 + " & ".join(all_top1_lp_beans[i])
                 + f" & {all_avg_top1_lp_beans[i]} &"
                 + " & ".join(all_cmap_lp[i])
@@ -649,8 +660,8 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
                 
                 # Calculate average excluding POW (index 0)
                 res_means = []
-                for i, val in enumerate(cmap_res):
-                    if i != 0 and val != "-" and isinstance(val, tuple) and len(val) == 2 and val[0] is not None:  # Skip POW (index 0)
+                for j, val in enumerate(cmap_res):
+                    if j != 0 and val != "-" and isinstance(val, tuple) and len(val) == 2 and val[0] is not None:  # Skip POW (index 0)
                         res_means.append(val[0])  # Extract mean from tuple
                 
                 avg_cmap_res = calculate_mean_std(res_means)
@@ -663,7 +674,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
                 cbi_results = ["-"] * len(all_top1_ap_beans[i])
                 cbi_results[2] = res_results_beans[model]["top1"]
                 f.write(
-                    f" & {{Restricted}} & "
+                    f"                                         & {{Restricted}}                             & "
                     + " & ".join(cbi_results)
                     + f" & - &"
                     + " & ".join(cmap_res)
@@ -671,7 +682,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
                 )
             else:
                 f.write(
-                    f" & {{Attentive}} & "
+                    f"                                         & {{Attentive}}                              & "
                     + " & ".join(all_top1_ap_beans[i])
                     + f" & {all_avg_top1_ap_beans[i]} &"
                     + " & ".join(all_cmap_ap[i])
@@ -680,15 +691,15 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
 
             if finetuning:
                 f.write(
-                    f" & {{Finetuned}} & "
+                    f"                                         & {{Finetuned}}                              & "
                     + " & ".join(all_top1_ft_beans[i])
                     + f" & {all_avg_top1_ft_beans[i]} &"
                     + " & ".join(all_cmap_ft[i])
                     + f" & {all_avg_cmap_ft[i]} \\\\ \n"
                 )
 
-            if model != models[-1]:
-                f.write(f"\\hline \n")
+            if model != models[-1] and model != GENERAL_AUDIO_MODELS[-1]:
+                f.write(f"    \\hline\n")
 
     # === Table end part ===
     with open(output_path, "a") as f:
@@ -700,39 +711,47 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
 print(f"Creating Latex table...")
 # Settings:
 MODELS = [
+    # Baseline general audio models
     "audio_mae",
+    "BEATs", 
+    "eat_ssl",
+    # Bioacoustic foundation models
     "aves",
-    "BEATs",
     "BEATs_NatureLM",
     "biolingual",
     "bird_aves",
     "birdmae",
     "convnext_bs",
-    "eat_ssl",
     "perch",
     "ProtoCLR",
     "surfperch",
     "vit_inatsound",
 ]  # Extract these names from the CSV file
 MODEL_NAMES = [
+    # Baseline general audio models
     "Audio-MAE",
-    "AVES",
     "BEATs",
+    "EAT",
+    # Bioacoustic foundation models
+    "AVES",
     "BEATs-NLM",
     "Biolin-gual",
     "Bird-AVES",
     "Bird-MAE",
     "Conv-Next$_{BS}$",
-    "EAT-SSL",
     "Perch",
     "Proto-CLR",
     "Surf-Perch",
     "ViT-INS",
 ]  # These names will appear in the table split at "-" ordered the same as MODELS
+
+# Model groupings
+GENERAL_AUDIO_MODELS = ["audio_mae", "BEATs", "eat_ssl"]
+BIOACOUSTIC_MODELS = ["aves", "BEATs_NatureLM", "biolingual", "bird_aves", "birdmae", "convnext_bs", "perch", "ProtoCLR", "surfperch", "vit_inatsound"]
 CSV_PATH_BEANS = "/workspace/projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "/workspace/projects/biofoundation/results/latex/birdset.csv"
 FINETUNING = False  # Set to True if you want to include finetuning results
-RESTRICTED = True  # Set to True to use Perch, Surfperch, Convnext_Bs restricted models
+RESTRICTED = False  # Set to True to use Perch, Surfperch, Convnext_Bs restricted models
 AUROC = True  # Set to True to use AUROC instead of Top1
 STD = False
 
