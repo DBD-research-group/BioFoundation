@@ -24,7 +24,7 @@ class AudioToImageConverter(nn.Module):
         window_length_samples: int = 512,
         hop_length_samples: int = 128,
         mel_bands: int = 128,
-        mel_min_hz: float = 0,
+        mel_min_hz: float = 50,
         mel_max_hz: float = 11025,
         amin: float = 1e-10,
         ref_power_value: float = 1.0,
@@ -198,7 +198,7 @@ class Vit_iNatSoundModel(ViT):
             torch.Tensor: The output of the classifier.
         """
         if self.preprocess_in_model:
-            input_values = self.preprocess(input_values)
+            input_values = self._preprocess(input_values)
         if self.classifier is not None:
             embeddings = self.get_embeddings(input_values)
             logits = self.classifier(embeddings)
