@@ -30,21 +30,27 @@ This repository contains the official implementation and evaluation framework fo
 ### 📊 Supported Models
 
 Our framework evaluates the following foundation models:
-- **Perch** - Google's bioacoustic foundation model
-- **AVES** - Audio-visual bird species classifier  
-- **AudioMAE** - Masked autoencoder for audio
-- **ConvNeXT** - Modern convolutional network
-- **EAT-SSL** - Self-supervised audio transformer
-- **SSAST** - Self-supervised audio spectrogram transformer
-- **AST** - Audio spectrogram transformer
-- **BEATS** - Bidirectional encoder representation from audio transformers
-- **EAT** - Enhanced audio transformer
-- **BioLingual** - Multimodal biological foundation model
-- **HuBERT** - Hidden-unit BERT for speech
+
+**Baseline General Audio Models:**
+- **AudioMAE** 
+- **BEATs** 
+- **EAT** 
+
+**Bioacoustic Foundation Models:**
+- **AVES** 
+- **BEATs NLM** 
+- **BioLingual** 
+- **Bird AVES**
+- **BirdMAE**
+- **ConvNeXt_BS** 
+- **Perch**
+- **ProtoCLR** 
+- **SurfPerch**
+- **ViT INS**
 
 ### 🗂️ Datasets
 
-- **[BEANS](https://huggingface.co/collections/DBD-research-group/beans-datasets-6611bd670cd7eb7b0bfc614e)**: Benchmark of Animal Sounds
+- **BEANS**: Benchmark of Animal Sounds
   - Watkins Marine Mammal Dataset (31 classes)
   - Bat Calls (10 classes) 
   - CBI Bird Dataset (264 classes)
@@ -191,21 +197,6 @@ datamodule:
 |`beans_dogs`|10|Dog bark classifications|
 |`beans_humbugdb`|14|Mosquito wing-beat sounds|
 
-### Embedding Configuration
 
-Customize embedding extraction through experiment configs:
-
-```yaml
-defaults:
-  - biofoundation/embedding/BEANS/embedding_config.yaml 
-  - override /datamodule/embedding_model: ../../module/network/hubert.yaml
-
-datamodule:
-  k_samples: 0          # Samples per class (0 = use all)
-  val_batch: null       # Validation batch size
-  test_ratio: 0.5       # Test/validation split ratio
-  low_train: False      # Use BEANS low-resource split
-  average: True         # Average embeddings vs. first seconds
-```
 
 
