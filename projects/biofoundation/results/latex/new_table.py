@@ -423,7 +423,7 @@ def beans_table(path, models, restricted, auroc, show_std=True):
 
 
 # === BirdSet ===
-def birdset_table(models, model_names, path, path_beans, finetuning, restricted, auroc, show_std=True):
+def birdset_table(models, model_names, path, path_beans, finetuning, restricted, auroc, show_std=True, output_path='/workspace/projects/biofoundation/results/latex/results.tex'):
     df = pd.read_csv(path, sep=",")
 
     # Rename for convenience
@@ -459,7 +459,6 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
     ]  # This will not change often
 
     # Delete old LaTeX file if it exists
-    output_path = "/workspace/projects/biofoundation/results/latex/results.tex"
     if os.path.exists(output_path):
         os.remove(output_path)
 
@@ -763,5 +762,13 @@ for model, model_name in zip(MODELS, MODEL_NAMES):
 print(f"Finetuning: {FINETUNING}")
 
 birdset_table(
-    MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, RESTRICTED, AUROC, STD
+    MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, restricted=True, auroc=True, show_std=False ,output_path='/workspace/projects/biofoundation/results/latex/results.tex'
+)
+
+birdset_table(
+    MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, restricted=True, auroc=True, show_std=True ,output_path='/workspace/projects/biofoundation/results/latex/results-std.tex'
+)
+
+birdset_table(
+    MODELS, MODEL_NAMES, CSV_PATH, CSV_PATH_BEANS, FINETUNING, restricted=True, auroc=False, show_std=True ,output_path='/workspace/projects/biofoundation/results/latex/results-acc.tex'
 )

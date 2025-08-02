@@ -160,7 +160,7 @@ class BirdMAEModel(ViT):
         # normalize the fbank features mean: -7.2 std: 4.43
         preprpocessed_fbank_features = (
             preprpocessed_fbank_features - self.MEAN
-        ) / self.STD
+        ) / (self.STD * 2)
         return preprpocessed_fbank_features.unsqueeze(1)  # Add channel dimension
 
     def forward(
