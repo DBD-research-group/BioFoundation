@@ -50,7 +50,7 @@ class BioLingualTransformsWrapper(BirdSetTransformsWrapper):
 
     def transform_values(self, batch):
         input_values, labels = super().transform_values(batch)
-        
+
         input_values = input_values.squeeze(1)
         input_values = self.processor(
             audios=input_values.numpy(),

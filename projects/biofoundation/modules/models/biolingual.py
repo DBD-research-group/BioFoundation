@@ -115,7 +115,7 @@ class BioLingualClassifier(BioFoundationModel):
 
         else:
 
-            return {'input_features': input_values, 'is_longer': False}
+            return {"input_features": input_values, "is_longer": False}
 
     def pool(self, embeddings: torch.Tensor, pooling) -> torch.Tensor:
         if pooling == "just_cls":
@@ -150,7 +150,7 @@ class BioLingualClassifier(BioFoundationModel):
 
     def get_embeddings(self, input_tensor) -> torch.Tensor:
         inputs = self._preprocess(input_tensor)
-       
+
         output = self.model.audio_model(
             **inputs, output_hidden_states=True, return_dict=True
         )  # self.model.extract_audio_features() doesnt retrn the hidden states for some reason so we go a layer down
