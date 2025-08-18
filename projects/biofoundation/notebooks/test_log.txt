@@ -1,2 +1,0 @@
-Total valid entries: 49527
-Total missing entries: 4357
