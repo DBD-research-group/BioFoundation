@@ -1,0 +1,24 @@
+model: 
+  _target_: biofoundation.modules.models.perchv2.Perchv2Model
+  num_classes: null
+  restrict_logits: False
+  label_path: ${paths.root_dir}/resources/perch/perch_v2_ebird_classes.csv
+  gpu_to_use: ${trainer.devices[0]}
+  pretrain_info:
+    hf_path: ${datamodule.dataset.hf_path}
+    hf_name: ${datamodule.dataset.hf_name}
+    hf_pretrain_name: null
+    valid_test_only: False
+  classifier:
+    _target_: biofoundation.modules.models.linear_classifier.LinearClassifier
+    in_features: 1536
+    num_classes: ${module.network.model.num_classes}
+
+model_name: perchv2
+model_type: waveform
+torch_compile: False
+sample_rate: 32_000
+normalize_spectrogram: False
+normalize_waveform: "instance_peak_normalization"
+embedding_size: 1536
+length: 5
