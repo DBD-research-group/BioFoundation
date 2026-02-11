@@ -1,0 +1,52 @@
+model: 
+  _target_: biofoundation.modules.models.beats.BEATsModel
+  checkpoint_path: '/workspace/models/beats/esp-aves2-sl-beats-all.safetensors'
+  num_classes: null
+  model_cfg:
+    # Patch Embedding
+    input_patch_size: 16
+    embed_dim: 512
+    conv_bias: False
+
+    # Encoder Architecture
+    encoder_layers: 12
+    encoder_embed_dim: 768
+    encoder_ffn_embed_dim: 3072
+    encoder_attention_heads: 12
+    activation_fn: "gelu"
+
+    # Training Dynamics
+    layer_wise_gradient_decay_ratio: 1.0
+    layer_norm_first: False
+    deep_norm: False
+
+    # Dropouts
+    dropout: 0.1
+    attention_dropout: 0.1
+    activation_dropout: 0.0
+    encoder_layerdrop: 0.05
+    dropout_input: 0.0
+
+    # Positional Embeddings
+    conv_pos: 128
+    conv_pos_groups: 16
+
+    # Relative position embedding
+    relative_position_embedding: True
+    num_buckets: 320
+    max_distance: 800
+    gru_rel_pos: True
+
+    # Label Predictor
+    finetuned_model: True
+    predictor_dropout: 0.0
+    predictor_class: 12806 #! The weights have this size but we don't use it in linear probing anyway
+
+model_name: BEATs_Avex
+model_type: waveform
+torch_compile: False
+sample_rate: 16_000
+normalize_spectrogram: False
+normalize_waveform: False
+embedding_size: 768
+length: 10
