@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Possible datasets: "PER" "POW" "NES" "UHH" "HSN" "NBP" "SSW" "SNE"
-# Models: (12) aves, perch, audiomae, convnext, convnext_bs, eat_ssl, ssast, ast, beats, eat, biolingual, hubert
+# Models: (12) aves, perch, audiomae, convnext, convnext_bs, eat_ssl, ssast, ast, beats, eat, biolingual, hubert, perchv2
 
 # Default values
 default_models=("perch")
 default_seeds=(3)
 default_dnames=("PER" "POW" "NES" "UHH" "HSN" "NBP" "SSW" "SNE")
-default_timeouts=(640 440 440 440 440 440 640 640) # All 2 hours for now
+default_timeouts=(640 440 440 440 440 440 640 640)
 default_tags=()
 gpu=0
 extras=""
@@ -121,7 +121,6 @@ for model in "${models[@]}"; do
       trainer.devices=[$gpu] \
       datamodule.dataset.dataset_name=$dname \
       datamodule.dataset.hf_name=$dname \
-      trainer.devices=[$gpu] \
       $tag_args \
       $extra_args
   done

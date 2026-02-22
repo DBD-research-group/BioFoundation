@@ -6,7 +6,7 @@ wandb/
 *.MP3
 *.Mp3
 *.WAV
-*.csv
+#*.csv
 *.json
 output_birdset/
 *.hydra

@@ -46,9 +46,10 @@ module:
     num_labels: ${datamodule.dataset.n_classes}  
  
 trainer:
+  num_sanity_val_steps: 0
   min_epochs: 1
   max_epochs: 50
-  devices: [0]
+  devices: [2]
  
 datamodule:
   dataset:
