@@ -48,6 +48,19 @@ Our framework evaluates the following foundation models:
 - **SurfPerch**
 - **ViT INS**
 
+Some of the models need local Checkpoint files, which can be downloaded using the following links. Make sure to adjust the path in the config file based on your file location:
+
+| Model | GitHub | Checkpoint | Config |
+| :--- | :--- | :--- | :--- |
+| **BEATs** | [beats](https://github.com/microsoft/unilm/tree/master/beats) | [BEATs_iter3_plus_AS2M.pt](https://1drv.ms/u/s!AqeByhGUtINrgcpke6_lRSZEKD5j2Q?e=A3FpOf) | - |
+| **AVES** | [aves](https://github.com/earthspecies/aves?tab=readme-ov-file#pretrained-models) | [aves-base-bio.torchaudio.pt](https://storage.googleapis.com/esp-public-files/ported_aves/aves-base-bio.torchaudio.pt) | [aves-base-bio.torchaudio.model_config.json](https://storage.googleapis.com/esp-public-files/ported_aves/aves-base-bio.torchaudio.model_config.json) |
+| **Bird AVES** | [aves](https://github.com/earthspecies/aves?tab=readme-ov-file#pretrained-models) | [birdaves-biox-base.torchaudio.pt](https://storage.googleapis.com/esp-public-files/birdaves/birdaves-biox-base.torchaudio.pt) | [birdaves-biox-base.torchaudio.model_config.json](https://storage.googleapis.com/esp-public-files/birdaves/birdaves-biox-base.torchaudio.model_config.json) |
+| **BEATs NLM** | [NatureLM-audio](https://github.com/earthspecies/NatureLM-audio) | Extract? | - |
+| **BirdMAE** | [Bird-MAE](https://github.com/DBD-research-group/Bird-MAE) | ? HF? | - |
+| **ProtoCLR** | [ProtoCLR](https://github.com/ilyassmoummad/ProtoCLR) | [protoclr.pth](https://huggingface.co/ilyassmoummad/ProtoCLR/resolve/main/protoclr.pth) | - |
+| **ViT INS** | [iNatSounds](https://github.com/cvl-umass/iNatSounds) | [vit_single_mixup.pt](https://drive.google.com/file/d/1dr1bLURsXiPcX8xQOzs1eO5y2htullM7/view?usp=share_link) | - |
+
+
 ### 🗂️ Datasets
 
 - **BEANS**: Benchmark of Animal Sounds
