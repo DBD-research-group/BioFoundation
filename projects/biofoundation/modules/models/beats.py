@@ -74,7 +74,7 @@ class BEATsModel(ViT):
             checkpoint = torch.load(self.checkpoint_path)
             cfg = BEATsConfig(checkpoint["cfg"])
             model = BEATs(cfg)
-            model.load_state_dict(checkpoint["model"])
+            model.load_state_dict(checkpoint["model"], strict=False)
 
         return model
 
