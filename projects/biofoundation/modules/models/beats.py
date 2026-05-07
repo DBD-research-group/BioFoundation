@@ -1,4 +1,4 @@
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict, Any
 from biofoundation.modules.models.vit import ViT
 
 import torch
@@ -25,6 +25,7 @@ class BEATsModel(ViT):
         num_classes: int | None,
         embedding_size: int = EMBEDDING_SIZE,
         checkpoint_path: str = "/workspace/models/beats/BEATs_iter3_plus_AS2M.pt",
+        model_cfg: Optional[Dict[str, Any]] = None,
         local_checkpoint: str = None,
         load_classifier_checkpoint: bool = True,
         freeze_backbone: bool = False,
@@ -36,6 +37,8 @@ class BEATsModel(ViT):
         ] = "just_cls",
     ) -> None:
         self.model = None  # Placeholder for the loaded model
+        if model_cfg is not None:
+            self.model_cfg = model_cfg
         self.checkpoint_path = checkpoint_path
         super().__init__(
             num_classes=num_classes,
@@ -55,12 +58,24 @@ class BEATsModel(ViT):
         """
         log.info(f">> Loading model from {self.checkpoint_path}")
         # load the pre-trained checkpoints
-        checkpoint = torch.load(self.checkpoint_path)
+        if self.checkpoint_path.endswith(".safetensors"):
+            try:
+                from safetensors.torch import load_file as safetensors_load_file
+            except ImportError:
+                raise ImportError(
+                    "safetensors is required to load .safetensors checkpoints. Please install it via pip install safetensors."
+                )
+            checkpoint = safetensors_load_file(self.checkpoint_path)
+            cfg = BEATsConfig(self.model_cfg) #! Safetensors only contains tensors so we need to provide the config ourselves
+            model = BEATs(cfg)
+            state_dict = {k.replace("backbone.", "").replace("classifier.", "predictor."): v for k, v in checkpoint.items()}
+            model.load_state_dict(state_dict)
+        else:
+            checkpoint = torch.load(self.checkpoint_path)
+            cfg = BEATsConfig(checkpoint["cfg"])
+            model = BEATs(cfg)
+            model.load_state_dict(checkpoint["model"], strict=False)
 
-        cfg = BEATsConfig(checkpoint["cfg"])
-        model = BEATs(cfg)
-        model.load_state_dict(checkpoint["model"])
-        # self.model.predictor = None  # This should happen autom. if correct checkpoint
         return model
 
     def _load_preprocessor(self):

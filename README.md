@@ -29,24 +29,30 @@ This repository contains the official implementation and evaluation framework fo
 
 ### 📊 Supported Models
 
-Our framework evaluates the following foundation models:
+Our framework evaluates the following foundation models. Some of the models need local Checkpoint files, which can be downloaded using the following links:
 
 **Baseline General Audio Models:**
-- **AudioMAE** 
-- **BEATs** 
-- **EAT** 
+| Model | GitHub | Checkpoint |
+| :--- | :--- | :--- |
+| **AudioMAE** | [AudioMAE](https://github.com/facebookresearch/AudioMAE) | `hf_hub:gaunernst/vit_base_patch16_1024_128.audiomae_as2m`|
+| **BEATs** | [beats](https://github.com/microsoft/unilm/tree/master/beats) | [BEATs_iter3_plus_AS2M.pt](https://1drv.ms/u/s!AqeByhGUtINrgcpke6_lRSZEKD5j2Q?e=A3FpOf) | 
+| **EAT** | [EAT](https://github.com/cwx-worst-one/EAT) | `worstchan/EAT-base_epoch30_finetune_AS2M` |
 
 **Bioacoustic Foundation Models:**
-- **AVES** 
-- **BEATs NLM** 
-- **BioLingual** 
-- **Bird AVES**
-- **BirdMAE**
-- **ConvNeXt_BS** 
-- **Perch**
-- **ProtoCLR** 
-- **SurfPerch**
-- **ViT INS**
+| Model | GitHub | Checkpoint | Config |
+| :--- | :--- | :--- | :--- |
+| **AVES** | [aves](https://github.com/earthspecies/aves?tab=readme-ov-file#pretrained-models) | [aves-base-bio.torchaudio.pt](https://storage.googleapis.com/esp-public-files/ported_aves/aves-base-bio.torchaudio.pt) | [aves-base-bio.torchaudio.model_config.json](https://storage.googleapis.com/esp-public-files/ported_aves/aves-base-bio.torchaudio.model_config.json) |
+| **BEATs NLM** | [NatureLM-audio](https://github.com/earthspecies/NatureLM-audio) | [model.safetensors](https://huggingface.co/EarthSpeciesProject/NatureLM-audio/blob/main/model.safetensors), convert to `.pt` using [convert_to_pt.py](projects/biofoundation/scripts/convert_to_pt.py) | - |
+| **BioLingual** | [BioLingual](https://github.com/david-rx/BioLingual) |`davidrrobinson/BioLingual`| - |
+| **Bird AVES** | [aves](https://github.com/earthspecies/aves?tab=readme-ov-file#pretrained-models) | [birdaves-biox-base.torchaudio.pt](https://storage.googleapis.com/esp-public-files/birdaves/birdaves-biox-base.torchaudio.pt) | [birdaves-biox-base.torchaudio.model_config.json](https://storage.googleapis.com/esp-public-files/birdaves/birdaves-biox-base.torchaudio.model_config.json) |
+| **BirdMAE** | [Bird-MAE](https://github.com/DBD-research-group/Bird-MAE) | [HF](https://huggingface.co/collections/DBD-research-group/bird-mae) | - |
+| **ConvNeXt_BS** | [ConvNeXt](https://github.com/facebookresearch/ConvNeXt) |`DBD-research-group/ConvNeXT-Base-BirdSet-XCL`| - |
+| **Perch** | [Perch](https://github.com/google-research/perch) | `bird-vocalization-classifier/TensorFlow2/bird-vocalization-classifier` | - |
+| **PerchV2** | [Perch](https://github.com/google-research/perch) | `bird-vocalization-classifier/tensorFlow2/perch_v2/2` | - |
+| **ProtoCLR** | [ProtoCLR](https://github.com/ilyassmoummad/ProtoCLR) | [protoclr.pth](https://huggingface.co/ilyassmoummad/ProtoCLR/resolve/main/protoclr.pth) | - |
+| **SurfPerch** | [Perch](https://github.com/google-research/perch) | `surfperch/TensorFlow2/1` | - |
+| **ViT INS** | [iNatSounds](https://github.com/cvl-umass/iNatSounds) | [vit_single_mixup.pt](https://drive.google.com/file/d/1dr1bLURsXiPcX8xQOzs1eO5y2htullM7/view?usp=share_link) | - |
+
 
 ### 🗂️ Datasets
 

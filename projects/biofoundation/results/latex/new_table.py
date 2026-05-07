@@ -300,7 +300,7 @@ def beans_table(path, models, restricted, auroc, show_std=True):
             if (
                 restricted
                 and dataset == "beans_cbi"
-                and (model == "surfperch" or model == "perch" or model == "convnext_bs")
+                and (model == "surfperch" or model == "perch" or model == "convnext_bs" or model == "perchv2")
             ):
                 # Calculate restricted results in isolated form for easy removal
                 res_rows = df[
@@ -644,7 +644,7 @@ def birdset_table(models, model_names, path, path_beans, finetuning, restricted,
                 + f" & {all_avg_cmap_lp[i]} \\\\ \n"
             )
             if restricted and (
-                model == "surfperch" or model == "perch" or model == "convnext_bs"
+                model == "surfperch" or model == "perch" or model == "convnext_bs" or model == "perchv2"
             ):
                 # Calculate restricted results in isolated form for easy removal
                 cmap_res = []
@@ -722,6 +722,7 @@ MODELS = [
     "birdmae",
     "convnext_bs",
     "perch",
+    "perchv2",
     "ProtoCLR",
     "surfperch",
     "vit_inatsound",
@@ -739,6 +740,7 @@ MODEL_NAMES = [
     "Bird-MAE",
     "Conv-Next$_{BS}$",
     "Perch",
+    "Perch-v2",
     "Proto-CLR",
     "Surf-Perch",
     "ViT-INS",
@@ -746,11 +748,11 @@ MODEL_NAMES = [
 
 # Model groupings
 GENERAL_AUDIO_MODELS = ["audio_mae", "BEATs", "eat_ssl"]
-BIOACOUSTIC_MODELS = ["aves", "BEATs_NatureLM", "biolingual", "bird_aves", "birdmae", "convnext_bs", "perch", "ProtoCLR", "surfperch", "vit_inatsound"]
+BIOACOUSTIC_MODELS = ["aves", "BEATs_NatureLM", "biolingual", "bird_aves", "birdmae", "convnext_bs", "perch", "perchv2", "ProtoCLR", "surfperch", "vit_inatsound"]
 CSV_PATH_BEANS = "/workspace/projects/biofoundation/results/latex/beans.csv"
 CSV_PATH = "/workspace/projects/biofoundation/results/latex/birdset.csv"
 FINETUNING = False  # Set to True if you want to include finetuning results
-RESTRICTED = False  # Set to True to use Perch, Surfperch, Convnext_Bs restricted models
+RESTRICTED = True  # Set to True to use Perch, Surfperch, Convnext_Bs restricted models
 AUROC = True  # Set to True to use AUROC instead of Top1
 STD = False
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Possible datasets: watkins, beans_bats, beans_cbi, beans_dogs, beans_humbugdb
-# Models: (12) aves, perch, audiomae, convnext, convnext_bs, eat_ssl, ssast, ast, beats, eat, biolingual, hubert
+# Models: (12) aves, perch, audiomae, convnext, convnext_bs, eat_ssl, ssast, ast, beats, eat, biolingual, hubert, perchv2
 
 # Default values
 default_models=("perch")
@@ -127,7 +127,6 @@ for model in "${models[@]}"; do
       datamodule.dataset.dataset_name=$dname \
       datamodule.dataset.hf_path="DBD-research-group/$dname" \
       datamodule.dataset.n_classes=$dclass \
-      trainer.devices=[$gpu] \
       $tag_args \
       $extra_args
   done
